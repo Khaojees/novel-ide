@@ -3,69 +3,37 @@ import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Editor from "./components/Editor/Editor";
 import CharacterPanel from "./components/CharacterPanel/CharacterPanel";
-import { useProjectStore } from "./stores/projectStore";
+// import { useProjectStore } from './stores/projectStore';
 
 const App: React.FC = () => {
   const [isProjectLoaded, setIsProjectLoaded] = useState<boolean>(false);
-  const {
-    projectPath,
-    setProjectPath,
-    loadProject,
-    createNewProject,
-    saveCurrentFile,
-  } = useProjectStore();
 
-  useEffect(() => {
-    // Check if project was already loaded
-    if (projectPath) {
-      setIsProjectLoaded(true);
-    }
-
-    // Listen for menu events
-    if (window.electronAPI) {
-      window.electronAPI.onMenuNewProject(handleNewProject);
-      window.electronAPI.onMenuOpenProject(handleOpenProject);
-      window.electronAPI.onMenuSave(handleSave);
-    }
-
-    return () => {
-      if (window.electronAPI) {
-        window.electronAPI.removeAllListeners("menu-new-project");
-        window.electronAPI.removeAllListeners("menu-open-project");
-        window.electronAPI.removeAllListeners("menu-save");
-      }
-    };
-  }, [projectPath]);
+  // Temporary placeholder until we create the store
+  // const {
+  //   projectPath,
+  //   setProjectPath,
+  //   loadProject,
+  //   createNewProject,
+  //   saveCurrentFile
+  // } = useProjectStore();
 
   const handleNewProject = async (): Promise<void> => {
-    if (!window.electronAPI) return;
-
-    const result = await window.electronAPI.selectDirectory();
-    if (!result.canceled && result.filePaths.length > 0) {
-      const projectDir = result.filePaths[0];
-      await createNewProject(projectDir);
-      setIsProjectLoaded(true);
-    }
+    console.log("New project clicked");
+    setIsProjectLoaded(true);
   };
 
   const handleOpenProject = async (): Promise<void> => {
-    if (!window.electronAPI) return;
-
-    const result = await window.electronAPI.selectDirectory();
-    if (!result.canceled && result.filePaths.length > 0) {
-      const projectDir = result.filePaths[0];
-      await loadProject(projectDir);
-      setIsProjectLoaded(true);
-    }
+    console.log("Open project clicked");
+    setIsProjectLoaded(true);
   };
 
   const handleSave = (): void => {
-    saveCurrentFile();
+    console.log("Save clicked");
   };
 
-  if (!isProjectLoaded) {
-    return (
-      <div className="app-container">
+  return (
+    <div className="app-container">
+      {!isProjectLoaded ? (
         <div className="welcome-screen">
           <h1>Novel IDE</h1>
           <p>AI-powered writing tool for novelists</p>
@@ -78,17 +46,13 @@ const App: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="app-container">
-      <div className="app-layout">
-        <Sidebar />
-        <Editor />
-        <CharacterPanel />
-      </div>
+      ) : (
+        <div className="app-layout">
+          <Sidebar />
+          <Editor />
+          <CharacterPanel />
+        </div>
+      )}
     </div>
   );
 };
