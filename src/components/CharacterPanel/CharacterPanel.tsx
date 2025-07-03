@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { Search, User, Plus, Pin, PinOff } from "lucide-react";
-import { Character } from "../../type";
 import { useProjectStore } from "../../store/projectStore";
+import { Character } from "../../type";
+
 interface CharacterPanelProps {}
 
 const CharacterPanel: React.FC<CharacterPanelProps> = () => {
@@ -47,7 +48,14 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     const dialogue = dialogueInputs[character.id]?.trim();
     if (!dialogue) return;
 
-    insertDialogue(character.name, dialogue);
+    // Send custom event to editor for cursor insertion
+    const event = new CustomEvent("insertDialogue", {
+      detail: {
+        characterName: character.name,
+        dialogue: dialogue,
+      },
+    });
+    window.dispatchEvent(event);
 
     // Clear the input
     setDialogueInputs((prev) => ({
@@ -76,6 +84,16 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       }
       return newPinned;
     });
+  };
+
+  const handleQuickDialogue = (character: Character, text: string) => {
+    const event = new CustomEvent("insertDialogue", {
+      detail: {
+        characterName: character.name,
+        dialogue: text,
+      },
+    });
+    window.dispatchEvent(event);
   };
 
   const handleAddCharacter = () => {
@@ -164,13 +182,29 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
                   onKeyPress={(e) => handleKeyPress(e, character)}
                   rows={2}
                 />
-                <button
-                  className="dialogue-add-btn"
-                  onClick={() => handleAddDialogue(character)}
-                  disabled={!dialogueInputs[character.id]?.trim()}
-                >
-                  Add Dialogue
-                </button>
+                <div className="dialogue-actions">
+                  <button
+                    className="dialogue-add-btn"
+                    onClick={() => handleAddDialogue(character)}
+                    disabled={!dialogueInputs[character.id]?.trim()}
+                  >
+                    Add Dialogue
+                  </button>
+                  <button
+                    className="dialogue-quick-btn"
+                    onClick={() => handleQuickDialogue(character, "...")}
+                    title="Add pause"
+                  >
+                    ...
+                  </button>
+                  <button
+                    className="dialogue-quick-btn"
+                    onClick={() => handleQuickDialogue(character, "*thinks*")}
+                    title="Add thought"
+                  >
+                    💭
+                  </button>
+                </div>
               </div>
 
               {/* Character Details (collapsible) */}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -45,14 +45,101 @@ const Editor: React.FC<EditorProps> = () => {
   });
 
   // Update editor content when active tab changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (editor && activeTabData) {
       editor.commands.setContent(currentContent);
     }
   }, [activeTab, editor, currentContent]);
 
+  // Listen for dialogue insertion from character panel
+  useEffect(() => {
+    const handleDialogueInsertion = (event: CustomEvent) => {
+      const { characterName, dialogue } = event.detail;
+      insertDialogueAtCursor(characterName, dialogue);
+    };
+
+    window.addEventListener(
+      "insertDialogue",
+      handleDialogueInsertion as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "insertDialogue",
+        handleDialogueInsertion as EventListener
+      );
+    };
+  }, [editor]);
+
+  const insertDialogueAtCursor = (characterName: string, dialogue: string) => {
+    if (!editor) return;
+
+    const { selection } = editor.state;
+    const { from, to } = selection;
+
+    // Get current line content
+    const doc = editor.state.doc;
+    const currentPos = from;
+    const $pos = doc.resolve(currentPos);
+    const line = $pos.parent;
+    const lineText = line.textContent;
+
+    // Check if we're in a dialogue line
+    const dialoguePattern = /^([^:]+):\s*/;
+    const isInDialogue = dialoguePattern.test(lineText);
+
+    if (isInDialogue) {
+      // We're in a dialogue line, split it
+      const lineStart = $pos.start();
+      const lineEnd = $pos.end();
+      const beforeCursor = lineText.substring(0, currentPos - lineStart);
+      const afterCursor = lineText.substring(currentPos - lineStart);
+
+      const match = beforeCursor.match(dialoguePattern);
+      if (match) {
+        const originalCharacter = match[1];
+        const beforeDialogue = beforeCursor.substring(match[0].length);
+
+        // Create the replacement content
+        const newContent = [
+          `${originalCharacter}: ${beforeDialogue}`,
+          ``,
+          `${characterName}: ${dialogue}`,
+          ``,
+          `${originalCharacter}: ${afterCursor}`,
+        ].join("\n");
+
+        // Replace the entire line
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from: lineStart, to: lineEnd })
+          .deleteSelection()
+          .insertContent(newContent)
+          .run();
+      }
+    } else {
+      // We're in narrative text, split and insert dialogue
+      if (from === to) {
+        // No selection, just insert at cursor
+        const insertContent = `\n\n${characterName}: ${dialogue}\n\n`;
+        editor.chain().focus().insertContent(insertContent).run();
+      } else {
+        // There's a selection, split around it
+        const selectedText = editor.state.doc.textBetween(from, to);
+        const insertContent = `\n\n${characterName}: ${dialogue}\n\n${selectedText}`;
+
+        editor
+          .chain()
+          .focus()
+          .deleteSelection()
+          .insertContent(insertContent)
+          .run();
+      }
+    }
+  };
+
   const handleTabClick = (tabId: string) => {
-    // Tab switching is handled by the store
     useProjectStore.getState().openTabs.find((tab) => tab.id === tabId) &&
       useProjectStore.setState({ activeTab: tabId });
   };
@@ -74,12 +161,27 @@ const Editor: React.FC<EditorProps> = () => {
     }
   };
 
+  // Get word count
+  const getWordCount = () => {
+    if (!editor) return 0;
+    const text = editor.getText();
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
+  };
+
   if (openTabs.length === 0) {
     return (
       <div className="editor-container">
         <div className="editor-placeholder">
           <FileText size={48} />
           <p>Open a chapter or idea to start writing</p>
+          <div className="editor-tips">
+            <h4>Tips:</h4>
+            <ul>
+              <li>Use the character panel to insert dialogue</li>
+              <li>Press Ctrl+S to save</li>
+              <li>Create new chapters from the sidebar</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
@@ -129,8 +231,12 @@ const Editor: React.FC<EditorProps> = () => {
 
       {/* Status Bar */}
       <div className="editor-status">
-        <span className="word-count">
-          {editor?.storage.characterCount?.words() || 0} words
+        <span className="word-count">{getWordCount()} words</span>
+        <span className="character-count">
+          {editor?.storage.characterCount?.characters() ||
+            editor?.getText().length ||
+            0}{" "}
+          characters
         </span>
         <span className="file-status">
           {isContentModified ? "Modified" : "Saved"}

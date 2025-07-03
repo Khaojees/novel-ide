@@ -194,11 +194,42 @@
 
 .editor-placeholder {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   color: #666666;
   font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}
+
+.editor-tips {
+  margin-top: 2rem;
+  text-align: left;
+  color: #9ca3af;
+}
+
+.editor-tips h4 {
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.editor-tips ul {
+  list-style: none;
+  padding: 0;
+}
+
+.editor-tips li {
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.editor-tips li:before {
+  content: "→ ";
+  color: #3b82f6;
+  font-weight: bold;
 }
 
 /* Character Panel Styles */
@@ -395,8 +426,9 @@
   color: #9ca3af;
 }
 
-.word-count {
+.word-count, .character-count {
   color: #666666;
+  margin-right: 1rem;
 }
 
 .file-status {
