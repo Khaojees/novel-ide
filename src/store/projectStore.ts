@@ -70,7 +70,7 @@ export const useProjectStore = create<ProjectState>()(
                 id: "protagonist",
                 name: "Main Character",
                 traits: "Brave, determined, mysterious past",
-                bio: "The story's main protagonist...",
+                bio: "The story's main protagonist who will discover their destiny.",
                 appearance: "Tall with piercing eyes",
                 active: true,
               },
@@ -123,18 +123,18 @@ Main Character: "This is where it all begins."
 
 ## Plot Concepts
 - Write your initial story concepts here
-- Character backstories
-- World building notes
+- Character backstories and motivations
+- World building notes and rules
 
-## Themes
+## Themes to Explore
 - What themes do you want to explore?
-- Character arcs
-- Emotional journey
+- Character development arcs
+- Emotional journey and conflicts
 
 ## Research Notes
 - Add research notes here
-- Historical context
-- Technical details
+- Historical context if needed
+- Technical details and accuracy
 `;
 
           const ideasResult = await fileAPI.writeFile(ideasPath, ideasTemplate);
@@ -248,6 +248,11 @@ Main Character: "This is where it all begins."
             activeTab: null,
           });
 
+          // Auto-open first chapter if available
+          if (chapters.length > 0) {
+            get().openTab(chapters[0]);
+          }
+
           console.log("Project loaded successfully!");
           console.log(`- Characters: ${characters.length}`);
           console.log(`- Chapters: ${chapters.length}`);
@@ -264,7 +269,10 @@ Main Character: "This is where it all begins."
         const existingTab = openTabs.find((tab) => tab.id === item.id);
 
         if (existingTab) {
-          set({ activeTab: existingTab.id });
+          set({
+            activeTab: existingTab.id,
+            currentContent: existingTab.content,
+          });
         } else {
           const newTab: Tab = {
             id: item.id,
@@ -279,6 +287,7 @@ Main Character: "This is where it all begins."
             openTabs: [...openTabs, newTab],
             activeTab: newTab.id,
             currentContent: newTab.content,
+            isContentModified: false,
           });
         }
       },
@@ -299,6 +308,7 @@ Main Character: "This is where it all begins."
           currentContent: newActiveTab
             ? updatedTabs.find((t) => t.id === newActiveTab)?.content || ""
             : "",
+          isContentModified: false,
         });
       },
 
@@ -364,7 +374,10 @@ Main Character: "This is where it all begins."
 
         const newCharacter: Character = {
           ...character,
-          id: character.name.toLowerCase().replace(/\s+/g, "-"),
+          id:
+            character.name.toLowerCase().replace(/\s+/g, "-") +
+            "-" +
+            Date.now(),
         };
 
         const updatedCharacters = [...characters, newCharacter];
@@ -391,10 +404,117 @@ Main Character: "This is where it all begins."
         }
       },
 
+      // Add chapter
+      addChapter: async (title: string): Promise<void> => {
+        const { chapters, projectPath } = get();
+        const fileAPI = getFileAPI();
+
+        if (!projectPath) return;
+
+        const order = chapters.length + 1;
+        const filename = `${order.toString().padStart(3, "0")}-${title
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")}.md`;
+        const filePath = `${projectPath}/chapters/${filename}`;
+
+        const chapterTemplate = `---
+order: ${order}
+title: "${title}"
+tags: []
+characters: []
+location: ""
+---
+
+# ${title}
+
+Write your chapter here...
+`;
+
+        try {
+          const result = await fileAPI.writeFile(filePath, chapterTemplate);
+          if (!result.success) {
+            throw new Error(`Failed to create chapter: ${result.error}`);
+          }
+
+          const newChapter: Chapter = {
+            id: filename.replace(".md", ""),
+            filename,
+            path: filePath,
+            order,
+            title,
+            tags: [],
+            characters: [],
+            location: "",
+            content: `# ${title}\n\nWrite your chapter here...`,
+          };
+
+          const newChapters = [...chapters, newChapter].sort(
+            (a, b) => a.order - b.order
+          );
+          set({ chapters: newChapters });
+
+          // Auto-open the new chapter
+          get().openTab(newChapter);
+          console.log("Chapter added:", title);
+        } catch (error) {
+          console.error("Error adding chapter:", error);
+          throw error;
+        }
+      },
+
+      // Add idea
+      addIdea: async (name: string): Promise<void> => {
+        const { ideas, projectPath } = get();
+        const fileAPI = getFileAPI();
+
+        if (!projectPath) return;
+
+        const filename = `${name
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")}.md`;
+        const filePath = `${projectPath}/ideas/${filename}`;
+
+        const ideaTemplate = `# ${name}
+
+Write your ideas here...
+
+## Notes
+- Add your notes
+- Brainstorm concepts
+- Develop themes
+`;
+
+        try {
+          const result = await fileAPI.writeFile(filePath, ideaTemplate);
+          if (!result.success) {
+            throw new Error(`Failed to create idea: ${result.error}`);
+          }
+
+          const newIdea: Idea = {
+            id: filename.replace(".md", ""),
+            filename,
+            path: filePath,
+            content: ideaTemplate,
+          };
+
+          const newIdeas = [...ideas, newIdea];
+          set({ ideas: newIdeas });
+
+          // Auto-open the new idea
+          get().openTab(newIdea);
+          console.log("Idea added:", name);
+        } catch (error) {
+          console.error("Error adding idea:", error);
+          throw error;
+        }
+      },
+
       // Insert dialogue (placeholder - will be implemented with editor)
       insertDialogue: (characterName: string, dialogue: string) => {
         console.log(`Inserting dialogue for ${characterName}: "${dialogue}"`);
-        // This will be implemented when we have the TipTap editor
+        // This will be implemented when we have the TipTap editor integration
       },
     }),
     {

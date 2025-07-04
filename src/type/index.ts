@@ -1,3 +1,5 @@
+// src/type/index.ts
+
 // Character types
 export interface Character {
   id: string;
@@ -66,6 +68,8 @@ export interface ProjectState {
   updateContent: (content: string) => void;
   saveCurrentFile: () => Promise<void>;
   addCharacter: (character: Omit<Character, "id">) => Promise<void>;
+  addChapter: (title: string) => Promise<void>;
+  addIdea: (name: string) => Promise<void>;
   insertDialogue: (characterName: string, dialogue: string) => void;
 }
 

@@ -5,44 +5,69 @@ import { useProjectStore } from "../../store/projectStore";
 import { Character, Chapter, Idea } from "../../type";
 
 const Sidebar: React.FC = () => {
-  const { characters, chapters, ideas, openTab, addCharacter, projectPath } =
-    useProjectStore();
+  const {
+    characters,
+    chapters,
+    ideas,
+    openTab,
+    addCharacter,
+    addChapter,
+    addIdea,
+    projectPath,
+  } = useProjectStore();
 
   const handleItemClick = (item: Chapter | Idea) => {
     console.log("Opening:", item);
     openTab(item);
   };
 
-  const handleAddCharacter = () => {
+  const handleAddCharacter = async () => {
     // Simple prompt for now - later we'll make a proper modal
     const name = prompt("Enter character name:");
-    const traits = prompt("Enter character traits:");
-    const bio = prompt("Enter character bio:");
+    if (!name) return;
 
-    if (name && traits && bio) {
-      addCharacter({
+    const traits = prompt("Enter character traits:");
+    if (!traits) return;
+
+    const bio = prompt("Enter character bio:");
+    if (!bio) return;
+
+    try {
+      await addCharacter({
         name,
         traits,
         bio,
         appearance: "",
         active: true,
-      }).catch((error) => {
-        console.error("Failed to add character:", error);
-        alert("Failed to add character. Please try again.");
       });
+    } catch (error) {
+      console.error("Failed to add character:", error);
+      alert("Failed to add character. Please try again.");
     }
   };
 
-  const handleAddChapter = () => {
-    console.log("Add new chapter");
-    // TODO: Implement chapter creation
-    alert("Chapter creation not yet implemented. Coming soon!");
+  const handleAddChapter = async () => {
+    const title = prompt("Enter chapter title:");
+    if (!title) return;
+
+    try {
+      await addChapter(title);
+    } catch (error) {
+      console.error("Failed to add chapter:", error);
+      alert("Failed to add chapter. Please try again.");
+    }
   };
 
-  const handleAddIdea = () => {
-    console.log("Add new idea");
-    // TODO: Implement idea creation
-    alert("Idea creation not yet implemented. Coming soon!");
+  const handleAddIdea = async () => {
+    const name = prompt("Enter idea name:");
+    if (!name) return;
+
+    try {
+      await addIdea(name);
+    } catch (error) {
+      console.error("Failed to add idea:", error);
+      alert("Failed to add idea. Please try again.");
+    }
   };
 
   const renderSection = (
