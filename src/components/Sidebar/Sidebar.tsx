@@ -1,65 +1,56 @@
-import React, { useState } from "react";
-import { Plus, Users, BookOpen, Lightbulb, FileText } from "lucide-react";
+// src/components/Sidebar/Sidebar.tsx
+import React from "react";
+import { Plus, Users, BookOpen, Lightbulb } from "lucide-react";
+import { useProjectStore } from "../../store/projectStore";
+import { Character, Chapter, Idea } from "../../type";
 
-interface SidebarProps {}
+const Sidebar: React.FC = () => {
+  const { characters, chapters, ideas, openTab, addCharacter, projectPath } =
+    useProjectStore();
 
-interface SidebarItem {
-  id: string;
-  name: string;
-  type: "character" | "chapter" | "idea";
-  active?: boolean;
-}
-
-const Sidebar: React.FC<SidebarProps> = () => {
-  // Mock data - will be replaced with real data from store
-  const [characters] = useState<SidebarItem[]>([
-    { id: "1", name: "Alex", type: "character" },
-    { id: "2", name: "Sarah", type: "character" },
-    { id: "3", name: "Marcus", type: "character" },
-  ]);
-
-  const [chapters] = useState<SidebarItem[]>([
-    {
-      id: "1",
-      name: "Chapter 1 - The Beginning",
-      type: "chapter",
-      active: true,
-    },
-    { id: "2", name: "Chapter 2 - Discovery", type: "chapter" },
-    { id: "3", name: "Chapter 3 - Conflict", type: "chapter" },
-  ]);
-
-  const [ideas] = useState<SidebarItem[]>([
-    { id: "1", name: "Plot Ideas", type: "idea" },
-    { id: "2", name: "World Setting", type: "idea" },
-    { id: "3", name: "Character Backstories", type: "idea" },
-  ]);
-
-  const handleItemClick = (item: SidebarItem) => {
-    console.log("Opening:", item.name);
-    // Will integrate with store later
+  const handleItemClick = (item: Chapter | Idea) => {
+    console.log("Opening:", item);
+    openTab(item);
   };
 
   const handleAddCharacter = () => {
-    console.log("Add new character");
-    // Will open character creation modal
+    // Simple prompt for now - later we'll make a proper modal
+    const name = prompt("Enter character name:");
+    const traits = prompt("Enter character traits:");
+    const bio = prompt("Enter character bio:");
+
+    if (name && traits && bio) {
+      addCharacter({
+        name,
+        traits,
+        bio,
+        appearance: "",
+        active: true,
+      }).catch((error) => {
+        console.error("Failed to add character:", error);
+        alert("Failed to add character. Please try again.");
+      });
+    }
   };
 
   const handleAddChapter = () => {
     console.log("Add new chapter");
-    // Will create new chapter file
+    // TODO: Implement chapter creation
+    alert("Chapter creation not yet implemented. Coming soon!");
   };
 
   const handleAddIdea = () => {
     console.log("Add new idea");
-    // Will create new idea file
+    // TODO: Implement idea creation
+    alert("Idea creation not yet implemented. Coming soon!");
   };
 
   const renderSection = (
     title: string,
-    items: SidebarItem[],
+    items: (Chapter | Idea | Character)[],
     icon: React.ReactNode,
-    onAdd: () => void
+    onAdd: () => void,
+    onItemClick?: (item: Chapter | Idea) => void
   ) => (
     <div className="sidebar-section">
       <div className="section-header">
@@ -72,7 +63,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
           onClick={onAdd}
           title={`Add ${title.slice(0, -1)}`}
         >
-          <Plus size={16} />
+          <Plus size={14} />
         </button>
       </div>
 
@@ -80,10 +71,16 @@ const Sidebar: React.FC<SidebarProps> = () => {
         {items.map((item) => (
           <div
             key={item.id}
-            className={`sidebar-item ${item.active ? "active" : ""}`}
-            onClick={() => handleItemClick(item)}
+            className="sidebar-item"
+            onClick={() => onItemClick && onItemClick(item as Chapter | Idea)}
           >
-            <span className="item-name">{item.name}</span>
+            <span className="item-name">
+              {"title" in item
+                ? item.title
+                : "name" in item
+                ? item.name
+                : item.filename}
+            </span>
           </div>
         ))}
 
@@ -95,10 +92,27 @@ const Sidebar: React.FC<SidebarProps> = () => {
     </div>
   );
 
+  // Show loading state if no project is loaded
+  if (!projectPath) {
+    return (
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <h2>Project Explorer</h2>
+        </div>
+        <div className="sidebar-placeholder">
+          <p>No project loaded</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
         <h2>Project Explorer</h2>
+        <div className="project-info">
+          <span className="project-path">{projectPath.split("/").pop()}</span>
+        </div>
       </div>
 
       {renderSection(
@@ -112,10 +126,17 @@ const Sidebar: React.FC<SidebarProps> = () => {
         "Chapters",
         chapters,
         <BookOpen size={16} />,
-        handleAddChapter
+        handleAddChapter,
+        handleItemClick
       )}
 
-      {renderSection("Ideas", ideas, <Lightbulb size={16} />, handleAddIdea)}
+      {renderSection(
+        "Ideas",
+        ideas,
+        <Lightbulb size={16} />,
+        handleAddIdea,
+        handleItemClick
+      )}
     </div>
   );
 };

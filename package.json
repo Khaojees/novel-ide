@@ -5,7 +5,8 @@
   "main": "src/main/index.js",
   "homepage": "./",
   "scripts": {
-    "start": "concurrently \"npm run start:react\" \"wait-on http://localhost:3000 && npm run start:electron\"",
+    "start": "react-scripts start",
+    "start-2": "concurrently \"npm run start:react\" \"wait-on http://localhost:3000 && npm run start:electron\"",
     "start:react": "react-scripts start",
     "start:electron": "electron .",
     "build": "react-scripts build",
@@ -90,3 +91,5 @@
     ]
   }
 }
+
+

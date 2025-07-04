@@ -1,147 +1,41 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
+// src/components/Editor/Editor.tsx
+import React, { useState, useEffect } from "react";
 import { X, Save, FileText } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 
-interface EditorProps {}
-
-const Editor: React.FC<EditorProps> = () => {
+const Editor: React.FC = () => {
   const {
     openTabs,
     activeTab,
     currentContent,
-    isContentModified,
     closeTab,
     updateContent,
     saveCurrentFile,
+    chapters,
+    ideas,
+    openTab,
   } = useProjectStore();
 
-  const activeTabData = openTabs.find((tab) => tab.id === activeTab);
+  const [localContent, setLocalContent] = useState(currentContent);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-      }),
-      Placeholder.configure({
-        placeholder: "Start writing your story...",
-        emptyEditorClass: "is-editor-empty",
-      }),
-    ],
-    content: currentContent || "",
-    onUpdate: ({ editor }) => {
-      updateContent(editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class:
-          "prose prose-invert max-w-none focus:outline-none min-h-full p-4",
-      },
-    },
-  });
-
-  // Update editor content when active tab changes
+  // Sync local content with store
   useEffect(() => {
-    if (editor && activeTabData) {
-      editor.commands.setContent(currentContent);
-    }
-  }, [activeTab, editor, currentContent]);
-
-  // Listen for dialogue insertion from character panel
-  useEffect(() => {
-    const handleDialogueInsertion = (event: CustomEvent) => {
-      const { characterName, dialogue } = event.detail;
-      insertDialogueAtCursor(characterName, dialogue);
-    };
-
-    window.addEventListener(
-      "insertDialogue",
-      handleDialogueInsertion as EventListener
-    );
-
-    return () => {
-      window.removeEventListener(
-        "insertDialogue",
-        handleDialogueInsertion as EventListener
-      );
-    };
-  }, [editor]);
-
-  const insertDialogueAtCursor = (characterName: string, dialogue: string) => {
-    if (!editor) return;
-
-    const { selection } = editor.state;
-    const { from, to } = selection;
-
-    // Get current line content
-    const doc = editor.state.doc;
-    const currentPos = from;
-    const $pos = doc.resolve(currentPos);
-    const line = $pos.parent;
-    const lineText = line.textContent;
-
-    // Check if we're in a dialogue line
-    const dialoguePattern = /^([^:]+):\s*/;
-    const isInDialogue = dialoguePattern.test(lineText);
-
-    if (isInDialogue) {
-      // We're in a dialogue line, split it
-      const lineStart = $pos.start();
-      const lineEnd = $pos.end();
-      const beforeCursor = lineText.substring(0, currentPos - lineStart);
-      const afterCursor = lineText.substring(currentPos - lineStart);
-
-      const match = beforeCursor.match(dialoguePattern);
-      if (match) {
-        const originalCharacter = match[1];
-        const beforeDialogue = beforeCursor.substring(match[0].length);
-
-        // Create the replacement content
-        const newContent = [
-          `${originalCharacter}: ${beforeDialogue}`,
-          ``,
-          `${characterName}: ${dialogue}`,
-          ``,
-          `${originalCharacter}: ${afterCursor}`,
-        ].join("\n");
-
-        // Replace the entire line
-        editor
-          .chain()
-          .focus()
-          .setTextSelection({ from: lineStart, to: lineEnd })
-          .deleteSelection()
-          .insertContent(newContent)
-          .run();
-      }
-    } else {
-      // We're in narrative text, split and insert dialogue
-      if (from === to) {
-        // No selection, just insert at cursor
-        const insertContent = `\n\n${characterName}: ${dialogue}\n\n`;
-        editor.chain().focus().insertContent(insertContent).run();
-      } else {
-        // There's a selection, split around it
-        const selectedText = editor.state.doc.textBetween(from, to);
-        const insertContent = `\n\n${characterName}: ${dialogue}\n\n${selectedText}`;
-
-        editor
-          .chain()
-          .focus()
-          .deleteSelection()
-          .insertContent(insertContent)
-          .run();
-      }
-    }
-  };
+    setLocalContent(currentContent);
+  }, [currentContent]);
 
   const handleTabClick = (tabId: string) => {
-    useProjectStore.getState().openTabs.find((tab) => tab.id === tabId) &&
-      useProjectStore.setState({ activeTab: tabId });
+    const tab = openTabs.find((t) => t.id === tabId);
+    if (tab) {
+      // Find the original item and open it
+      const chapter = chapters.find((c) => c.id === tabId);
+      const idea = ideas.find((i) => i.id === tabId);
+
+      if (chapter) {
+        openTab(chapter);
+      } else if (idea) {
+        openTab(idea);
+      }
+    }
   };
 
   const handleCloseTab = (tabId: string, event: React.MouseEvent) => {
@@ -149,98 +43,136 @@ const Editor: React.FC<EditorProps> = () => {
     closeTab(tabId);
   };
 
-  const handleSave = () => {
-    saveCurrentFile();
+  const handleContentChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const newContent = event.target.value;
+    setLocalContent(newContent);
+    updateContent(newContent);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    // Ctrl+S to save
-    if (event.ctrlKey && event.key === "s") {
-      event.preventDefault();
-      handleSave();
+  const handleSave = async () => {
+    try {
+      await saveCurrentFile();
+    } catch (error) {
+      console.error("Failed to save:", error);
     }
   };
 
-  // Get word count
-  const getWordCount = () => {
-    if (!editor) return 0;
-    const text = editor.getText();
-    return text.trim() ? text.trim().split(/\s+/).length : 0;
-  };
+  const activeTabData = openTabs.find((tab) => tab.id === activeTab);
 
-  if (openTabs.length === 0) {
-    return (
-      <div className="editor-container">
-        <div className="editor-placeholder">
-          <FileText size={48} />
-          <p>Open a chapter or idea to start writing</p>
-          <div className="editor-tips">
-            <h4>Tips:</h4>
-            <ul>
-              <li>Use the character panel to insert dialogue</li>
-              <li>Press Ctrl+S to save</li>
-              <li>Create new chapters from the sidebar</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+  // Listen for dialogue insertion events
+  useEffect(() => {
+    const handleDialogueInsertion = (event: CustomEvent) => {
+      const { characterName, dialogue } = event.detail;
+
+      if (activeTabData) {
+        // Simple dialogue insertion - just append to current content
+        const dialogueText = `\n\n${characterName}: "${dialogue}"\n\n`;
+        const newContent = localContent + dialogueText;
+        setLocalContent(newContent);
+        updateContent(newContent);
+      }
+    };
+
+    window.addEventListener(
+      "insertDialogue",
+      handleDialogueInsertion as EventListener
     );
-  }
+    return () => {
+      window.removeEventListener(
+        "insertDialogue",
+        handleDialogueInsertion as EventListener
+      );
+    };
+  }, [activeTabData, localContent, updateContent]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === "s") {
+          event.preventDefault();
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
-    <div className="editor-container" onKeyDown={handleKeyDown}>
+    <div className="editor-container">
       {/* Tabs */}
       <div className="editor-tabs">
         {openTabs.map((tab) => (
-          <div
+          <button
             key={tab.id}
-            className={`editor-tab ${tab.id === activeTab ? "active" : ""}`}
+            className={`editor-tab ${activeTab === tab.id ? "active" : ""}`}
             onClick={() => handleTabClick(tab.id)}
           >
-            <span className="tab-name">
-              {tab.name}
-              {tab.modified && <span className="modified-indicator">•</span>}
-            </span>
+            <FileText size={14} />
+            <span>{tab.name}</span>
+            {tab.modified && <span className="modified-indicator">●</span>}
             <button
               className="tab-close"
               onClick={(e) => handleCloseTab(tab.id, e)}
-              title="Close tab"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
-          </div>
-        ))}
-
-        {/* Save button */}
-        <div className="tab-actions">
-          <button
-            className={`save-button ${isContentModified ? "modified" : ""}`}
-            onClick={handleSave}
-            disabled={!isContentModified}
-            title="Save (Ctrl+S)"
-          >
-            <Save size={16} />
           </button>
-        </div>
+        ))}
       </div>
 
       {/* Editor Content */}
       <div className="editor-content">
-        <EditorContent editor={editor} />
-      </div>
+        {activeTabData ? (
+          <div className="editor-workspace">
+            <div className="editor-toolbar">
+              <button
+                className="toolbar-button"
+                onClick={handleSave}
+                disabled={!activeTabData.modified}
+              >
+                <Save size={16} />
+                Save
+              </button>
+              <div className="editor-info">
+                <span className="word-count">
+                  Words:{" "}
+                  {localContent.split(/\s+/).filter((w) => w.length > 0).length}
+                </span>
+                <span className="char-count">
+                  Characters: {localContent.length}
+                </span>
+              </div>
+            </div>
 
-      {/* Status Bar */}
-      <div className="editor-status">
-        <span className="word-count">{getWordCount()} words</span>
-        <span className="character-count">
-          {editor?.storage.characterCount?.characters() ||
-            editor?.getText().length ||
-            0}{" "}
-          characters
-        </span>
-        <span className="file-status">
-          {isContentModified ? "Modified" : "Saved"}
-        </span>
+            <textarea
+              className="editor-textarea"
+              value={localContent}
+              onChange={handleContentChange}
+              placeholder="Start writing your story..."
+              autoFocus
+            />
+          </div>
+        ) : (
+          <div className="editor-placeholder">
+            <h3>Welcome to Novel IDE</h3>
+            <p>Select a chapter or idea from the sidebar to start writing.</p>
+
+            <div className="editor-tips">
+              <h4>Quick Tips:</h4>
+              <ul>
+                <li>Use the Character Panel to quickly insert dialogue</li>
+                <li>Press Ctrl+S to save your work</li>
+                <li>Create new chapters and ideas from the sidebar</li>
+                <li>Your work is automatically organized into files</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
