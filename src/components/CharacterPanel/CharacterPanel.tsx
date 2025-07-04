@@ -1,12 +1,13 @@
+// src/components/CharacterPanel/CharacterPanel.tsx
 import React, { useState, useMemo } from "react";
-import { Search, User, Plus, Pin, PinOff } from "lucide-react";
+import { Search, Pin, PinOff, User } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { Character } from "../../type";
 
 interface CharacterPanelProps {}
 
 const CharacterPanel: React.FC<CharacterPanelProps> = () => {
-  const { characters, addCharacter, insertDialogue } = useProjectStore();
+  const { characters } = useProjectStore();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [dialogueInputs, setDialogueInputs] = useState<Record<string, string>>(
     {}
@@ -96,40 +97,20 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     window.dispatchEvent(event);
   };
 
-  const handleAddCharacter = () => {
-    const name = prompt("Character name:");
-    if (name?.trim()) {
-      const traits = prompt("Character traits:") || "Add traits here...";
-      const bio = prompt("Character bio:") || "Add biography here...";
-
-      addCharacter({
-        name: name.trim(),
-        traits,
-        bio,
-        active: true,
-      });
-    }
-  };
-
   return (
     <div className="character-panel">
       <div className="panel-header">
         <h3>Characters</h3>
-        <button
-          className="add-character-btn"
-          onClick={handleAddCharacter}
-          title="Add Character"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="character-count">
+          {filteredCharacters.length} of {characters.length}
+        </div>
       </div>
 
       {/* Search */}
-      <div className="search-container">
-        <Search size={16} className="search-icon" />
+      <div className="character-search">
+        <Search className="search-icon" size={16} />
         <input
           type="text"
-          className="character-search"
           placeholder="Search characters..."
           value={searchQuery}
           onChange={handleSearchChange}
@@ -139,36 +120,37 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       {/* Character List */}
       <div className="character-list">
         {filteredCharacters.length === 0 ? (
-          <div className="empty-state">
-            <User size={32} />
+          <div className="no-characters">
+            <User size={48} color="#6e7681" />
             <p>No characters found</p>
+            <small>
+              Add characters from the sidebar to start inserting dialogue
+            </small>
           </div>
         ) : (
           filteredCharacters.map((character) => (
-            <div key={character.id} className="character-card">
+            <div key={character.id} className="character-item">
+              {/* Character Header */}
               <div className="character-header">
-                <div className="character-info">
-                  <h4 className="character-name">{character.name}</h4>
-                  <button
-                    className={`pin-button ${
-                      pinnedCharacters.has(character.id) ? "pinned" : ""
-                    }`}
-                    onClick={() => handleTogglePin(character.id)}
-                    title={
-                      pinnedCharacters.has(character.id)
-                        ? "Unpin"
-                        : "Pin to top"
-                    }
-                  >
-                    {pinnedCharacters.has(character.id) ? (
-                      <Pin size={14} />
-                    ) : (
-                      <PinOff size={14} />
-                    )}
-                  </button>
-                </div>
-                <p className="character-traits">{character.traits}</p>
+                <span className="character-name">{character.name}</span>
+                <button
+                  className={`pin-button ${
+                    pinnedCharacters.has(character.id) ? "pinned" : ""
+                  }`}
+                  onClick={() => handleTogglePin(character.id)}
+                  title={
+                    pinnedCharacters.has(character.id) ? "Unpin" : "Pin to top"
+                  }
+                >
+                  {pinnedCharacters.has(character.id) ? (
+                    <Pin size={14} />
+                  ) : (
+                    <PinOff size={14} />
+                  )}
+                </button>
               </div>
+
+              <p className="character-traits">{character.traits}</p>
 
               {/* Dialogue Input */}
               <div className="dialogue-input">
@@ -219,14 +201,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
             </div>
           ))
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="panel-footer">
-        <button className="quick-action-btn" onClick={handleAddCharacter}>
-          <Plus size={16} />
-          New Character
-        </button>
       </div>
     </div>
   );

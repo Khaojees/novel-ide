@@ -89,60 +89,60 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           // Create first chapter
-          const chapterPath = `${projectDir}/chapters/001-beginning.md`;
-          const chapterTemplate = `---
-order: 1
-title: "Chapter 1 - The Beginning"
-tags: [intro]
-characters: [protagonist]
-location: ""
----
+          // const chapterPath = `${projectDir}/chapters/001-beginning.md`;
+          //           const chapterTemplate = `---
+          // order: 1
+          // title: "Chapter 1 - The Beginning"
+          // tags: [intro]
+          // characters: [protagonist]
+          // location: ""
+          // ---
 
-# Chapter 1 - The Beginning
+          // # Chapter 1 - The Beginning
 
-Write your story here...
+          // Write your story here...
 
-Main Character: "This is where it all begins."
+          // Main Character: "This is where it all begins."
 
-*The adventure starts now...*
-`;
+          // *The adventure starts now...*
+          // `;
 
-          const chapterResult = await fileAPI.writeFile(
-            chapterPath,
-            chapterTemplate
-          );
-          if (!chapterResult.success) {
-            throw new Error(
-              `Failed to create first chapter: ${chapterResult.error}`
-            );
-          }
+          // const chapterResult = await fileAPI.writeFile(
+          //   chapterPath,
+          //   chapterTemplate
+          // );
+          // if (!chapterResult.success) {
+          //   throw new Error(
+          //     `Failed to create first chapter: ${chapterResult.error}`
+          //   );
+          // }
 
           // Create initial ideas file
-          const ideasPath = `${projectDir}/ideas/initial-ideas.md`;
-          const ideasTemplate = `# Story Ideas
+          //           const ideasPath = `${projectDir}/ideas/initial-ideas.md`;
+          //           const ideasTemplate = `# Story Ideas
 
-## Plot Concepts
-- Write your initial story concepts here
-- Character backstories and motivations
-- World building notes and rules
+          // ## Plot Concepts
+          // - Write your initial story concepts here
+          // - Character backstories and motivations
+          // - World building notes and rules
 
-## Themes to Explore
-- What themes do you want to explore?
-- Character development arcs
-- Emotional journey and conflicts
+          // ## Themes to Explore
+          // - What themes do you want to explore?
+          // - Character development arcs
+          // - Emotional journey and conflicts
 
-## Research Notes
-- Add research notes here
-- Historical context if needed
-- Technical details and accuracy
-`;
+          // ## Research Notes
+          // - Add research notes here
+          // - Historical context if needed
+          // - Technical details and accuracy
+          // `;
 
-          const ideasResult = await fileAPI.writeFile(ideasPath, ideasTemplate);
-          if (!ideasResult.success) {
-            throw new Error(
-              `Failed to create ideas file: ${ideasResult.error}`
-            );
-          }
+          // const ideasResult = await fileAPI.writeFile(ideasPath, ideasTemplate);
+          // if (!ideasResult.success) {
+          //   throw new Error(
+          //     `Failed to create ideas file: ${ideasResult.error}`
+          //   );
+          // }
 
           // Load the newly created project
           await get().loadProject(projectDir);
@@ -179,27 +179,35 @@ Main Character: "This is where it all begins."
             }
           }
 
-          // Load chapters
+          // Load chapters with better debugging
           const chaptersDir = `${projectDir}/chapters`;
           const chaptersResult = await fileAPI.readDirectory(chaptersDir);
           let chapters: Chapter[] = [];
+
+          console.log("Chapters directory result:", chaptersResult);
 
           if (chaptersResult.success && chaptersResult.files) {
             const mdFiles = chaptersResult.files.filter((f) =>
               f.endsWith(".md")
             );
-            console.log("Found chapter files:", mdFiles);
+            console.log("Found markdown files:", mdFiles);
 
             for (const filename of mdFiles) {
               const filePath = `${chaptersDir}/${filename}`;
+              console.log(`Reading chapter file: ${filename}`);
+
               const fileResult = await fileAPI.readFile(filePath);
+              console.log(`File read result for ${filename}:`, fileResult);
 
               if (fileResult.success && fileResult.content) {
                 try {
                   const parsed = matter(fileResult.content);
-                  console.log(`Parsing chapter ${filename}:`, parsed.data);
+                  console.log(
+                    `Parsed frontmatter for ${filename}:`,
+                    parsed.data
+                  );
 
-                  chapters.push({
+                  const chapter: Chapter = {
                     id: filename.replace(".md", ""),
                     filename,
                     path: filePath,
@@ -211,15 +219,23 @@ Main Character: "This is where it all begins."
                     characters: parsed.data.characters || [],
                     location: parsed.data.location || "",
                     content: parsed.content,
-                  });
+                  };
+
+                  console.log(`Created chapter object:`, chapter);
+                  chapters.push(chapter);
                 } catch (e) {
                   console.error(`Error parsing chapter ${filename}:`, e);
                 }
+              } else {
+                console.error(
+                  `Failed to read file ${filename}:`,
+                  fileResult.error
+                );
               }
             }
 
             chapters.sort((a, b) => a.order - b.order);
-            console.log("Loaded chapters:", chapters);
+            console.log("Final sorted chapters:", chapters);
           }
 
           // Load ideas
@@ -418,10 +434,17 @@ Main Character: "This is where it all begins."
 
         if (!projectPath) return;
 
-        // Find the highest order number from existing chapters
+        // Find the highest order number from existing chapters + 1
         const maxOrder =
           chapters.length > 0 ? Math.max(...chapters.map((ch) => ch.order)) : 0;
-        const order = maxOrder + 1;
+        const newOrder = maxOrder + 1;
+
+        console.log(`Adding chapter: "${title}"`);
+        console.log(
+          `Current chapters:`,
+          chapters.map((ch) => ({ order: ch.order, title: ch.title }))
+        );
+        console.log(`Max order: ${maxOrder}, New order: ${newOrder}`);
 
         // Create filename with proper title slug
         const titleSlug = title
@@ -431,11 +454,15 @@ Main Character: "This is where it all begins."
           .replace(/-+/g, "-") // Replace multiple dashes with single dash
           .trim();
 
-        const filename = `${order.toString().padStart(3, "0")}-${titleSlug}.md`;
+        const filename = `${newOrder
+          .toString()
+          .padStart(3, "0")}-${titleSlug}.md`;
         const filePath = `${projectPath}/chapters/${filename}`;
 
+        console.log(`Creating file: ${filename}`);
+
         const chapterTemplate = `---
-order: ${order}
+order: ${newOrder}
 title: "${title}"
 tags: []
 characters: []
@@ -457,7 +484,7 @@ Write your chapter here...
             id: filename.replace(".md", ""),
             filename,
             path: filePath,
-            order,
+            order: newOrder,
             title,
             tags: [],
             characters: [],
@@ -468,6 +495,13 @@ Write your chapter here...
           const newChapters = [...chapters, newChapter].sort(
             (a, b) => a.order - b.order
           );
+
+          console.log(`Chapter created successfully:`, newChapter);
+          console.log(
+            `Updated chapters list:`,
+            newChapters.map((ch) => ({ order: ch.order, title: ch.title }))
+          );
+
           set({ chapters: newChapters });
 
           // Auto-open the new chapter

@@ -228,44 +228,44 @@ export const initializeMockData = () => {
     );
 
     // Create sample chapter
-    const chapterContent = `---
-order: 1
-title: "Chapter 1 - The Beginning"
-tags: [intro, setup]
-characters: [hero]
-location: "Village Square"
----
+    //     const chapterContent = `---
+    // order: 1
+    // title: "Chapter 1 - The Beginning"
+    // tags: [intro, setup]
+    // characters: [hero]
+    // location: "Village Square"
+    // ---
 
-# Chapter 1 - The Beginning
+    // # Chapter 1 - The Beginning
 
-The morning sun cast long shadows across the cobblestone square...
+    // The morning sun cast long shadows across the cobblestone square...
 
-Hero: "Today feels different somehow."
+    // Hero: "Today feels different somehow."
 
-*The adventure begins...*
-`;
+    // *The adventure begins...*
+    // `;
 
-    mockFileSystem.writeFile(
-      `${projectPath}/chapters/001-beginning.md`,
-      chapterContent
-    );
+    //     mockFileSystem.writeFile(
+    //       `${projectPath}/chapters/001-beginning.md`,
+    //       chapterContent
+    //     );
 
-    // Create sample idea
-    const ideaContent = `# Plot Ideas
+    //     // Create sample idea
+    //     const ideaContent = `# Plot Ideas
 
-## Main Quest
-- Hero discovers ancient artifact
-- Villain seeks the same artifact
-- Race against time to save the kingdom
+    // ## Main Quest
+    // - Hero discovers ancient artifact
+    // - Villain seeks the same artifact
+    // - Race against time to save the kingdom
 
-## Character Development
-- Hero learns to trust others
-- Villain's tragic backstory revealed
-- Friendship overcomes adversity
-`;
+    // ## Character Development
+    // - Hero learns to trust others
+    // - Villain's tragic backstory revealed
+    // - Friendship overcomes adversity
+    // `;
 
-    mockFileSystem.writeFile(`${projectPath}/ideas/plot-ideas.md`, ideaContent);
+    //     mockFileSystem.writeFile(`${projectPath}/ideas/plot-ideas.md`, ideaContent);
   });
 
-  console.log("Mock data initialized with sample projects");
+  // console.log("Mock data initialized with sample projects");
 };
