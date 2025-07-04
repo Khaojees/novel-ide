@@ -170,6 +170,9 @@ export const mockFileAPI: ElectronAPI = {
   removeAllListeners: (channel: string) => {
     console.log("Mock: removeAllListeners", channel);
   },
+  onMenuCloseProject: (callback: () => void) => {
+    console.log("Mock: onMenuCloseProject registered");
+  },
 };
 
 // Initialize some mock data for testing

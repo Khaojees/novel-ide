@@ -8,20 +8,99 @@ import { useProjectStore } from "./store/projectStore";
 
 const App: React.FC = () => {
   const [isProjectLoaded, setIsProjectLoaded] = useState<boolean>(false);
-  const { projectPath, createNewProject, loadProject, saveCurrentFile } =
-    useProjectStore();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const {
+    projectPath,
+    createNewProject,
+    loadProject,
+    saveCurrentFile,
+    setProjectPath,
+    clearProject,
+  } = useProjectStore();
 
-  // Check if project is loaded
+  // Validate existing project path on startup
   useEffect(() => {
-    if (projectPath) {
-      setIsProjectLoaded(true);
+    const validateProjectPath = async () => {
+      if (projectPath && window.electronAPI) {
+        try {
+          // Check if project directory still exists
+          const result = await window.electronAPI.readDirectory(projectPath);
+          if (result.success) {
+            // Try to load the project
+            await loadProject(projectPath);
+            setIsProjectLoaded(true);
+          } else {
+            // Path doesn't exist anymore, clear it
+            console.log(
+              "Project path no longer exists, clearing:",
+              projectPath
+            );
+            setProjectPath("");
+            setIsProjectLoaded(false);
+          }
+        } catch (error) {
+          console.error("Error validating project path:", error);
+          setProjectPath("");
+          setIsProjectLoaded(false);
+        }
+      } else if (projectPath && !window.electronAPI) {
+        // In browser mode, always try to load
+        try {
+          await loadProject(projectPath);
+          setIsProjectLoaded(true);
+        } catch (error) {
+          setProjectPath("");
+          setIsProjectLoaded(false);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    validateProjectPath();
+  }, [projectPath, loadProject, setProjectPath]);
+
+  // Setup menu handlers
+  useEffect(() => {
+    if (window.electronAPI) {
+      // Setup menu event listeners
+      window.electronAPI.onMenuNewProject(() => {
+        console.log("Menu: New Project");
+        handleNewProject();
+      });
+
+      window.electronAPI.onMenuOpenProject(() => {
+        console.log("Menu: Open Project");
+        handleOpenProject();
+      });
+
+      window.electronAPI.onMenuSave(() => {
+        console.log("Menu: Save");
+        handleSave();
+      });
+
+      window.electronAPI.onMenuCloseProject(() => {
+        console.log("Menu: Close Project");
+        handleCloseProject();
+      });
+
+      // Cleanup listeners on unmount
+      return () => {
+        if (window.electronAPI) {
+          window.electronAPI.removeAllListeners("menu-new-project");
+          window.electronAPI.removeAllListeners("menu-open-project");
+          window.electronAPI.removeAllListeners("menu-close-project");
+          window.electronAPI.removeAllListeners("menu-save");
+        }
+      };
     }
-  }, [projectPath]);
+  }, []);
 
   const handleNewProject = async (): Promise<void> => {
     try {
-      // In browser mode, simulate directory selection
+      setIsLoading(true);
+
       if (!window.electronAPI) {
+        // Browser mode
         const projectName = prompt("Enter project name:");
         if (projectName) {
           const mockPath = `/projects/${projectName}`;
@@ -39,11 +118,15 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Error creating new project:", error);
       alert("Failed to create new project. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleOpenProject = async (): Promise<void> => {
     try {
+      setIsLoading(true);
+
       if (!window.electronAPI) {
         // Browser mode - simulate project loading
         const existingProjects = [
@@ -69,17 +152,51 @@ const App: React.FC = () => {
         // Electron mode - use real directory picker
         const result = await window.electronAPI.selectDirectory();
         if (!result.canceled && result.filePaths.length > 0) {
-          await loadProject(result.filePaths[0]);
-          setIsProjectLoaded(true);
+          const selectedPath = result.filePaths[0];
+
+          // Validate that it's a valid project directory
+          const charactersCheck = await window.electronAPI.readDirectory(
+            `${selectedPath}/characters`
+          );
+          const chaptersCheck = await window.electronAPI.readDirectory(
+            `${selectedPath}/chapters`
+          );
+
+          if (charactersCheck.success || chaptersCheck.success) {
+            await loadProject(selectedPath);
+            setIsProjectLoaded(true);
+          } else {
+            const confirm = window.confirm(
+              "This doesn't appear to be a Novel IDE project directory. Would you like to initialize it as a new project?"
+            );
+            if (confirm) {
+              await createNewProject(selectedPath);
+              setIsProjectLoaded(true);
+            }
+          }
         }
       }
     } catch (error) {
       console.error("Error opening project:", error);
       alert("Failed to open project. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseProject = () => {
+    const confirm = window.confirm(
+      "Are you sure you want to close the current project? Any unsaved changes will be lost."
+    );
+    if (confirm) {
+      clearProject();
+      setIsProjectLoaded(false);
     }
   };
 
   const handleSave = async (): Promise<void> => {
+    if (!isProjectLoaded) return;
+
     try {
       await saveCurrentFile();
       console.log("Project saved successfully");
@@ -99,8 +216,8 @@ const App: React.FC = () => {
             handleSave();
             break;
           case "n":
-            event.preventDefault();
             if (event.shiftKey) {
+              event.preventDefault();
               handleNewProject();
             }
             break;
@@ -114,15 +231,15 @@ const App: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isProjectLoaded]);
 
   // Show loading state
-  if (projectPath && !isProjectLoaded) {
+  if (isLoading) {
     return (
       <div className="app-container">
         <div className="welcome-screen">
-          <h2>Loading Project...</h2>
-          <p>Please wait while we load your project files.</p>
+          <h2>Loading...</h2>
+          <p>Please wait while we initialize the application.</p>
         </div>
       </div>
     );
@@ -156,6 +273,37 @@ const App: React.FC = () => {
               </li>
             </ul>
           </div>
+          {projectPath && (
+            <div className="welcome-info">
+              <p
+                style={{
+                  color: "#f85149",
+                  fontSize: "0.9rem",
+                  marginTop: "1rem",
+                }}
+              >
+                Previous project path no longer exists: {projectPath}
+              </p>
+              <button
+                onClick={() => {
+                  setProjectPath("");
+                  window.location.reload(); // Force refresh to clear all state
+                }}
+                style={{
+                  marginTop: "0.5rem",
+                  padding: "0.5rem 1rem",
+                  background: "#21262d",
+                  border: "1px solid #f85149",
+                  borderRadius: "6px",
+                  color: "#f85149",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Clear Project Data
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="app-layout">

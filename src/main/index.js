@@ -68,6 +68,13 @@ function createMenu() {
             mainWindow.webContents.send('menu-open-project');
           }
         },
+        {
+          label: 'Close Project',
+          accelerator: 'CmdOrCtrl+Shift+W',
+          click: () => {
+            mainWindow.webContents.send('menu-close-project');
+          }
+        },
         { type: 'separator' },
         {
           label: 'Save',

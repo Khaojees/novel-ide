@@ -1,4 +1,4 @@
-// src/store/projectStore.ts
+// src/store/projectStore.ts - Fixed version
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import matter from "gray-matter";
@@ -188,6 +188,7 @@ Main Character: "This is where it all begins."
             const mdFiles = chaptersResult.files.filter((f) =>
               f.endsWith(".md")
             );
+            console.log("Found chapter files:", mdFiles);
 
             for (const filename of mdFiles) {
               const filePath = `${chaptersDir}/${filename}`;
@@ -196,12 +197,16 @@ Main Character: "This is where it all begins."
               if (fileResult.success && fileResult.content) {
                 try {
                   const parsed = matter(fileResult.content);
+                  console.log(`Parsing chapter ${filename}:`, parsed.data);
+
                   chapters.push({
                     id: filename.replace(".md", ""),
                     filename,
                     path: filePath,
                     order: parsed.data.order || 0,
-                    title: parsed.data.title || "Untitled",
+                    title:
+                      parsed.data.title ||
+                      filename.replace(".md", "").replace(/^\d+-/, ""),
                     tags: parsed.data.tags || [],
                     characters: parsed.data.characters || [],
                     location: parsed.data.location || "",
@@ -214,6 +219,7 @@ Main Character: "This is where it all begins."
             }
 
             chapters.sort((a, b) => a.order - b.order);
+            console.log("Loaded chapters:", chapters);
           }
 
           // Load ideas
@@ -276,7 +282,8 @@ Main Character: "This is where it all begins."
         } else {
           const newTab: Tab = {
             id: item.id,
-            name: "title" in item ? item.title : item.filename,
+            name:
+              "title" in item ? item.title : item.filename.replace(".md", ""),
             type: "title" in item ? "chapter" : "idea",
             path: item.path,
             content: item.content,
@@ -404,18 +411,27 @@ Main Character: "This is where it all begins."
         }
       },
 
-      // Add chapter
+      // Add chapter - Fixed to get proper order
       addChapter: async (title: string): Promise<void> => {
         const { chapters, projectPath } = get();
         const fileAPI = getFileAPI();
 
         if (!projectPath) return;
 
-        const order = chapters.length + 1;
-        const filename = `${order.toString().padStart(3, "0")}-${title
+        // Find the highest order number from existing chapters
+        const maxOrder =
+          chapters.length > 0 ? Math.max(...chapters.map((ch) => ch.order)) : 0;
+        const order = maxOrder + 1;
+
+        // Create filename with proper title slug
+        const titleSlug = title
           .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")}.md`;
+          .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+          .replace(/\s+/g, "-") // Replace spaces with dashes
+          .replace(/-+/g, "-") // Replace multiple dashes with single dash
+          .trim();
+
+        const filename = `${order.toString().padStart(3, "0")}-${titleSlug}.md`;
         const filePath = `${projectPath}/chapters/${filename}`;
 
         const chapterTemplate = `---
@@ -470,10 +486,14 @@ Write your chapter here...
 
         if (!projectPath) return;
 
-        const filename = `${name
+        const nameSlug = name
           .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, "")
           .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")}.md`;
+          .replace(/-+/g, "-")
+          .trim();
+
+        const filename = `${nameSlug}.md`;
         const filePath = `${projectPath}/ideas/${filename}`;
 
         const ideaTemplate = `# ${name}
@@ -515,6 +535,21 @@ Write your ideas here...
       insertDialogue: (characterName: string, dialogue: string) => {
         console.log(`Inserting dialogue for ${characterName}: "${dialogue}"`);
         // This will be implemented when we have the TipTap editor integration
+      },
+
+      // Clear project data
+      clearProject: () => {
+        console.log("Clearing project data");
+        set({
+          projectPath: null,
+          characters: [],
+          chapters: [],
+          ideas: [],
+          openTabs: [],
+          activeTab: null,
+          currentContent: "",
+          isContentModified: false,
+        });
       },
     }),
     {

@@ -31,17 +31,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke('delete-file', filePath);
   },
 
-  // Menu event listeners
+ // Menu event listeners
   onMenuNewProject: (callback) => {
     ipcRenderer.on('menu-new-project', callback);
   },
   onMenuOpenProject: (callback) => {
     ipcRenderer.on('menu-open-project', callback);
   },
+  onMenuCloseProject: (callback) => {
+    ipcRenderer.on('menu-close-project', callback);
+  },
   onMenuSave: (callback) => {
     ipcRenderer.on('menu-save', callback);
   },
-
+  
   // Cleanup listeners
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

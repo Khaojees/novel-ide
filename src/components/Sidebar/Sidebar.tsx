@@ -1,5 +1,5 @@
 // src/components/Sidebar/Sidebar.tsx
-import React from "react";
+import React, { useState } from "react";
 import { Plus, Users, BookOpen, Lightbulb } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { Character, Chapter, Idea } from "../../type";
@@ -16,58 +16,26 @@ const Sidebar: React.FC = () => {
     projectPath,
   } = useProjectStore();
 
+  // Modal states
+  const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [showChapterModal, setShowChapterModal] = useState(false);
+  const [showIdeaModal, setShowIdeaModal] = useState(false);
+
   const handleItemClick = (item: Chapter | Idea) => {
     console.log("Opening:", item);
     openTab(item);
   };
 
-  const handleAddCharacter = async () => {
-    // Simple prompt for now - later we'll make a proper modal
-    const name = prompt("Enter character name:");
-    if (!name) return;
-
-    const traits = prompt("Enter character traits:");
-    if (!traits) return;
-
-    const bio = prompt("Enter character bio:");
-    if (!bio) return;
-
-    try {
-      await addCharacter({
-        name,
-        traits,
-        bio,
-        appearance: "",
-        active: true,
-      });
-    } catch (error) {
-      console.error("Failed to add character:", error);
-      alert("Failed to add character. Please try again.");
-    }
+  const handleAddCharacter = () => {
+    setShowCharacterModal(true);
   };
 
-  const handleAddChapter = async () => {
-    const title = prompt("Enter chapter title:");
-    if (!title) return;
-
-    try {
-      await addChapter(title);
-    } catch (error) {
-      console.error("Failed to add chapter:", error);
-      alert("Failed to add chapter. Please try again.");
-    }
+  const handleAddChapter = () => {
+    setShowChapterModal(true);
   };
 
-  const handleAddIdea = async () => {
-    const name = prompt("Enter idea name:");
-    if (!name) return;
-
-    try {
-      await addIdea(name);
-    } catch (error) {
-      console.error("Failed to add idea:", error);
-      alert("Failed to add idea. Please try again.");
-    }
+  const handleAddIdea = () => {
+    setShowIdeaModal(true);
   };
 
   const renderSection = (
@@ -162,6 +130,248 @@ const Sidebar: React.FC = () => {
         handleAddIdea,
         handleItemClick
       )}
+
+      {/* Character Modal */}
+      {showCharacterModal && (
+        <CharacterModal
+          onClose={() => setShowCharacterModal(false)}
+          onSave={async (characterData) => {
+            try {
+              await addCharacter(characterData);
+              setShowCharacterModal(false);
+            } catch (error) {
+              console.error("Failed to add character:", error);
+              alert("Failed to add character. Please try again.");
+            }
+          }}
+        />
+      )}
+
+      {/* Chapter Modal */}
+      {showChapterModal && (
+        <ChapterModal
+          onClose={() => setShowChapterModal(false)}
+          onSave={async (title) => {
+            try {
+              await addChapter(title);
+              setShowChapterModal(false);
+            } catch (error) {
+              console.error("Failed to add chapter:", error);
+              alert("Failed to add chapter. Please try again.");
+            }
+          }}
+        />
+      )}
+
+      {/* Idea Modal */}
+      {showIdeaModal && (
+        <IdeaModal
+          onClose={() => setShowIdeaModal(false)}
+          onSave={async (name) => {
+            try {
+              await addIdea(name);
+              setShowIdeaModal(false);
+            } catch (error) {
+              console.error("Failed to add idea:", error);
+              alert("Failed to add idea. Please try again.");
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Simple Modal Components
+interface CharacterModalProps {
+  onClose: () => void;
+  onSave: (character: Omit<Character, "id">) => void;
+}
+
+const CharacterModal: React.FC<CharacterModalProps> = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    traits: "",
+    bio: "",
+    appearance: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.name && formData.traits && formData.bio) {
+      onSave({
+        ...formData,
+        active: true,
+      });
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Add New Character</h3>
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="Character name"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Traits *</label>
+            <input
+              type="text"
+              value={formData.traits}
+              onChange={(e) =>
+                setFormData({ ...formData, traits: e.target.value })
+              }
+              placeholder="Brave, kind, mysterious..."
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Bio *</label>
+            <textarea
+              value={formData.bio}
+              onChange={(e) =>
+                setFormData({ ...formData, bio: e.target.value })
+              }
+              placeholder="Character background and description"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Appearance</label>
+            <input
+              type="text"
+              value={formData.appearance}
+              onChange={(e) =>
+                setFormData({ ...formData, appearance: e.target.value })
+              }
+              placeholder="Physical description"
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Add Character
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface ChapterModalProps {
+  onClose: () => void;
+  onSave: (title: string) => void;
+}
+
+const ChapterModal: React.FC<ChapterModalProps> = ({ onClose, onSave }) => {
+  const [title, setTitle] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (title.trim()) {
+      onSave(title.trim());
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Add New Chapter</h3>
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Chapter Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Chapter 2 - The Journey Begins"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Add Chapter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface IdeaModalProps {
+  onClose: () => void;
+  onSave: (name: string) => void;
+}
+
+const IdeaModal: React.FC<IdeaModalProps> = ({ onClose, onSave }) => {
+  const [name, setName] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim()) {
+      onSave(name.trim());
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Add New Idea</h3>
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Idea Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Plot Ideas, Character Development..."
+              required
+              autoFocus
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Add Idea
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

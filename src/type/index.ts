@@ -61,6 +61,7 @@ export interface ProjectState {
 
   // Actions
   setProjectPath: (path: string) => void;
+  clearProject: () => void;
   createNewProject: (projectDir: string) => Promise<void>;
   loadProject: (projectDir: string) => Promise<void>;
   openTab: (item: Chapter | Idea) => void;
@@ -95,6 +96,7 @@ export interface ElectronAPI {
 
   onMenuNewProject: (callback: () => void) => void;
   onMenuOpenProject: (callback: () => void) => void;
+  onMenuCloseProject: (callback: () => void) => void; // ← เพิ่มบรรทัดนี้
   onMenuSave: (callback: () => void) => void;
   removeAllListeners: (channel: string) => void;
 }
