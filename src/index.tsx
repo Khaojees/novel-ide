@@ -4,6 +4,8 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { initializeMockData } from "./api/mockFileAPI";
+import { Buffer } from "buffer";
+window.Buffer = Buffer;
 
 // Initialize mock data for browser testing
 if (!window.electronAPI) {

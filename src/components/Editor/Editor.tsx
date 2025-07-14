@@ -100,14 +100,14 @@ const Editor: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handleSave]);
 
   return (
     <div className="editor-container">
       {/* Tabs */}
       <div className="editor-tabs">
         {openTabs.map((tab) => (
-          <button
+          <div
             key={tab.id}
             className={`editor-tab ${activeTab === tab.id ? "active" : ""}`}
             onClick={() => handleTabClick(tab.id)}
@@ -121,7 +121,7 @@ const Editor: React.FC = () => {
             >
               <X size={12} />
             </button>
-          </button>
+          </div>
         ))}
       </div>
 
