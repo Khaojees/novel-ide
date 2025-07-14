@@ -132,3 +132,68 @@
   border-color: #3b82f6;
   color: #3b82f6;
 }
+
+/* ===== SIDEBAR SECTION COLORS ===== */
+
+/* Characters Section */
+.sidebar-section.characters {
+  border-left: 3px solid var(--character-color);
+  padding-left: 12px;
+}
+
+.sidebar-section.characters .section-title h3 {
+  color: var(--character-color);
+}
+
+.sidebar-section.characters .add-icon-btn:hover {
+  color: var(--character-color);
+  background: var(--character-bg);
+}
+
+.sidebar-section.characters .add-button:hover {
+  border-color: var(--character-color);
+  color: var(--character-color);
+  background: var(--character-bg);
+}
+
+/* Chapters Section */
+.sidebar-section.chapters {
+  border-left: 3px solid var(--chapter-color);
+  padding-left: 12px;
+}
+
+.sidebar-section.chapters .section-title h3 {
+  color: var(--chapter-color);
+}
+
+.sidebar-section.chapters .add-icon-btn:hover {
+  color: var(--chapter-color);
+  background: var(--chapter-bg);
+}
+
+.sidebar-section.chapters .add-button:hover {
+  border-color: var(--chapter-color);
+  color: var(--chapter-color);
+  background: var(--chapter-bg);
+}
+
+/* Ideas Section */
+.sidebar-section.ideas {
+  border-left: 3px solid var(--idea-color);
+  padding-left: 12px;
+}
+
+.sidebar-section.ideas .section-title h3 {
+  color: var(--idea-color);
+}
+
+.sidebar-section.ideas .add-icon-btn:hover {
+  color: var(--idea-color);
+  background: var(--idea-bg);
+}
+
+.sidebar-section.ideas .add-button:hover {
+  border-color: var(--idea-color);
+  color: var(--idea-color);
+  background: var(--idea-bg);
+}

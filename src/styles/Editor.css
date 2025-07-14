@@ -178,3 +178,181 @@
   font-weight: bold;
   margin-right: 0.5rem;
 }
+
+
+/* ===== TAB COLORS ===== */
+
+/* Base tab styles */
+.editor-tab {
+  position: relative;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 16px;
+  color: #e6edf3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Character Tabs */
+.editor-tab.character {
+  border-top: 3px solid var(--character-color);
+  background: linear-gradient(to bottom, var(--character-bg), #21262d);
+}
+
+.editor-tab.character.active {
+  background: linear-gradient(to bottom, var(--character-bg), #161b22);
+  border-color: var(--character-color);
+  box-shadow: 0 0 0 1px var(--character-color);
+}
+
+.editor-tab.character:hover {
+  background: linear-gradient(to bottom, var(--character-bg), #161b22);
+  border-top-color: var(--character-color);
+}
+
+/* Chapter Tabs */
+.editor-tab.chapter {
+  border-top: 3px solid var(--chapter-color);
+  background: linear-gradient(to bottom, var(--chapter-bg), #21262d);
+}
+
+.editor-tab.chapter.active {
+  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
+  border-color: var(--chapter-color);
+  box-shadow: 0 0 0 1px var(--chapter-color);
+}
+
+.editor-tab.chapter:hover {
+  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
+  border-top-color: var(--chapter-color);
+}
+
+/* Idea Tabs */
+.editor-tab.idea {
+  border-top: 3px solid var(--idea-color);
+  background: linear-gradient(to bottom, var(--idea-bg), #21262d);
+}
+
+.editor-tab.idea.active {
+  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
+  border-color: var(--idea-color);
+  box-shadow: 0 0 0 1px var(--idea-color);
+}
+
+.editor-tab.idea:hover {
+  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
+  border-top-color: var(--idea-color);
+}
+
+/* ===== TAB ICONS ===== */
+
+/* Icon prefix for tabs */
+.editor-tab::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.editor-tab.character::before {
+  content: '👤';
+  filter: hue-rotate(120deg); /* เขียว */
+}
+
+.editor-tab.chapter::before {
+  content: '📖';
+  filter: hue-rotate(210deg); /* น้ำเงิน */
+}
+
+.editor-tab.idea::before {
+  content: '💡';
+  filter: hue-rotate(45deg); /* เหลือง */
+}
+
+/* ===== MODIFIED INDICATORS ===== */
+
+/* Dot indicator for modified files */
+.editor-tab.modified::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff6b6b;
+}
+
+.editor-tab.character.modified::after {
+  background: var(--character-color);
+}
+
+.editor-tab.chapter.modified::after {
+  background: var(--chapter-color);
+}
+
+.editor-tab.idea.modified::after {
+  background: var(--idea-color);
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+
+@media (max-width: 768px) {
+  .editor-tab {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .editor-tab::before {
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+  }
+}
+
+/* ===== DARK MODE ADJUSTMENTS ===== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --character-color: #34d399;  /* เขียวสว่างขึ้น */
+    --chapter-color: #60a5fa;    /* น้ำเงินสว่างขึ้น */
+    --idea-color: #fbbf24;       /* เหลืองสว่างขึ้น */
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .editor-tab.character {
+    border-top-width: 4px;
+  }
+  
+  .editor-tab.chapter {
+    border-top-width: 4px;
+  }
+  
+  .editor-tab.idea {
+    border-top-width: 4px;
+  }
+}
+
+/* Focus states for keyboard navigation */
+.editor-tab:focus {
+  outline: 2px solid var(--chapter-color);
+  outline-offset: 2px;
+}
+
+.editor-tab.character:focus {
+  outline-color: var(--character-color);
+}
+
+.editor-tab.idea:focus {
+  outline-color: var(--idea-color);
+}
