@@ -32,5 +32,6 @@
 @import './styles/Editor.css';
 @import './styles/CharacterPanel.css';
 @import './styles/Modal.css';
+@import './styles/CharacterEditor.css';
 
 /* You can add any additional app-specific styles here */

@@ -1,4 +1,4 @@
-// src/type/index.ts
+// src/type/index.ts - Updated with Character Editor support
 
 // Character types
 export interface Character {
@@ -8,6 +8,15 @@ export interface Character {
   bio: string;
   appearance?: string;
   active: boolean;
+  // เพิ่ม fields สำหรับ future structured data
+  names?: {
+    dialogue?: string; // ชื่อตอนพูด
+    narrative?: string; // ชื่อตอนเล่าเรื่อง
+    reference?: string; // ชื่อตอนอ้างอิง
+  };
+  relationships?: string[];
+  tags?: string[];
+  notes?: string;
 }
 
 export interface CharactersData {
@@ -35,7 +44,7 @@ export interface Idea {
   content: string;
 }
 
-// Tab types
+// Tab types - Enhanced with character support
 export interface Tab {
   id: string;
   name: string;
@@ -43,9 +52,22 @@ export interface Tab {
   path: string;
   content: string;
   modified?: boolean;
+  // เพิ่ม metadata สำหรับ character tabs
+  characterData?: Character;
 }
 
-// Project store types
+// Character usage tracking
+export interface CharacterUsage {
+  id: string;
+  type: "chapter" | "idea";
+  filename: string;
+  title: string;
+  usageType: "frontmatter" | "dialogue" | "narrative";
+  lineNumber?: number;
+  context?: string;
+}
+
+// Project store types - Enhanced
 export interface ProjectState {
   // Project data
   projectPath: string | null;
@@ -59,16 +81,25 @@ export interface ProjectState {
   currentContent: string;
   isContentModified: boolean;
 
-  // Actions
+  // Actions - Enhanced with character support
   setProjectPath: (path: string) => void;
   clearProject: () => void;
   createNewProject: (projectDir: string) => Promise<void>;
   loadProject: (projectDir: string) => Promise<void>;
+
+  // Tab management
   openTab: (item: Chapter | Idea) => void;
+  openCharacterTab: (character: Character) => void; // NEW!
   closeTab: (tabId: string) => void;
   updateContent: (content: string) => void;
   saveCurrentFile: () => Promise<void>;
+
+  // Content management
   addCharacter: (character: Omit<Character, "id">) => Promise<void>;
+  updateCharacter: (id: string, character: Partial<Character>) => Promise<void>; // NEW!
+  deleteCharacter: (id: string) => Promise<boolean>; // NEW!
+  getCharacterUsage: (id: string) => CharacterUsage[]; // NEW!
+
   addChapter: (title: string) => Promise<void>;
   addIdea: (name: string) => Promise<void>;
   insertDialogue: (characterName: string, dialogue: string) => void;
@@ -96,7 +127,7 @@ export interface ElectronAPI {
 
   onMenuNewProject: (callback: () => void) => void;
   onMenuOpenProject: (callback: () => void) => void;
-  onMenuCloseProject: (callback: () => void) => void; // ← เพิ่มบรรทัดนี้
+  onMenuCloseProject: (callback: () => void) => void;
   onMenuSave: (callback: () => void) => void;
   removeAllListeners: (channel: string) => void;
 }
@@ -106,4 +137,28 @@ declare global {
   interface Window {
     electronAPI?: ElectronAPI;
   }
+}
+
+// Character Editor specific types
+export interface CharacterFormData {
+  name: string;
+  traits: string;
+  bio: string;
+  appearance: string;
+  active: boolean;
+  names?: {
+    dialogue?: string;
+    narrative?: string;
+    reference?: string;
+  };
+  relationships?: string[];
+  tags?: string[];
+  notes?: string;
+}
+
+export interface CharacterEditorProps {
+  character: Character;
+  onSave: (character: Character) => Promise<void>;
+  onCancel: () => void;
+  usage: CharacterUsage[];
 }

@@ -1,468 +1,562 @@
-// src/store/projectStore.ts - Fixed version
+// src/store/projectStore.ts - Enhanced with Character Editor support
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import matter from "gray-matter";
 import {
-  ProjectState,
   Character,
   Chapter,
   Idea,
   Tab,
-  CharactersData,
+  ProjectState,
+  CharacterUsage,
 } from "../type";
 import { mockFileAPI } from "../api/mockFileAPI";
 
-// Get appropriate file API based on environment
 const getFileAPI = () => window.electronAPI || mockFileAPI;
 
-export const useProjectStore = create<ProjectState>()(
-  persist(
-    (set, get) => ({
-      // Project state
+export const useProjectStore = create<ProjectState>((set, get) => ({
+  // Project data
+  projectPath: null,
+  characters: [],
+  chapters: [],
+  ideas: [],
+
+  // Editor state
+  openTabs: [],
+  activeTab: null,
+  currentContent: "",
+  isContentModified: false,
+
+  // Actions
+  setProjectPath: (path: string) => {
+    set({ projectPath: path });
+  },
+
+  clearProject: () => {
+    set({
       projectPath: null,
       characters: [],
       chapters: [],
       ideas: [],
       openTabs: [],
       activeTab: null,
-
-      // Editor state
       currentContent: "",
       isContentModified: false,
+    });
+  },
 
-      // Set project path
-      setProjectPath: (path: string) => set({ projectPath: path }),
+  createNewProject: async (projectDir: string): Promise<void> => {
+    const fileAPI = getFileAPI();
 
-      // Create new project
-      createNewProject: async (projectDir: string): Promise<void> => {
-        const fileAPI = getFileAPI();
+    try {
+      // Create directory structure
+      const directories = [
+        `${projectDir}/characters`,
+        `${projectDir}/chapters`,
+        `${projectDir}/ideas`,
+        `${projectDir}/world`,
+        `${projectDir}/locations`,
+        `${projectDir}/snippets`,
+        `${projectDir}/assets`,
+        `${projectDir}/archive`,
+      ];
 
-        console.log("Creating new project at:", projectDir);
-
-        try {
-          // Create folder structure
-          const folders = [
-            "characters",
-            "chapters",
-            "ideas",
-            "world",
-            "locations",
-            "snippets",
-            "assets",
-            "archive",
-          ];
-
-          for (const folder of folders) {
-            const folderPath = `${projectDir}/${folder}`;
-            const result = await fileAPI.createDirectory(folderPath);
-            if (!result.success) {
-              throw new Error(
-                `Failed to create directory ${folder}: ${result.error}`
-              );
-            }
-          }
-
-          // Create initial characters.json
-          const charactersPath = `${projectDir}/characters/characters.json`;
-          const initialCharacters: CharactersData = {
-            characters: [
-              {
-                id: "protagonist",
-                name: "Main Character",
-                traits: "Brave, determined, mysterious past",
-                bio: "The story's main protagonist who will discover their destiny.",
-                appearance: "Tall with piercing eyes",
-                active: true,
-              },
-            ],
-          };
-
-          const charactersResult = await fileAPI.writeFile(
-            charactersPath,
-            JSON.stringify(initialCharacters, null, 2)
-          );
-
-          if (!charactersResult.success) {
-            throw new Error(
-              `Failed to create characters file: ${charactersResult.error}`
-            );
-          }
-
-          // Create first chapter
-          // const chapterPath = `${projectDir}/chapters/001-beginning.md`;
-          //           const chapterTemplate = `---
-          // order: 1
-          // title: "Chapter 1 - The Beginning"
-          // tags: [intro]
-          // characters: [protagonist]
-          // location: ""
-          // ---
-
-          // # Chapter 1 - The Beginning
-
-          // Write your story here...
-
-          // Main Character: "This is where it all begins."
-
-          // *The adventure starts now...*
-          // `;
-
-          // const chapterResult = await fileAPI.writeFile(
-          //   chapterPath,
-          //   chapterTemplate
-          // );
-          // if (!chapterResult.success) {
-          //   throw new Error(
-          //     `Failed to create first chapter: ${chapterResult.error}`
-          //   );
-          // }
-
-          // Create initial ideas file
-          //           const ideasPath = `${projectDir}/ideas/initial-ideas.md`;
-          //           const ideasTemplate = `# Story Ideas
-
-          // ## Plot Concepts
-          // - Write your initial story concepts here
-          // - Character backstories and motivations
-          // - World building notes and rules
-
-          // ## Themes to Explore
-          // - What themes do you want to explore?
-          // - Character development arcs
-          // - Emotional journey and conflicts
-
-          // ## Research Notes
-          // - Add research notes here
-          // - Historical context if needed
-          // - Technical details and accuracy
-          // `;
-
-          // const ideasResult = await fileAPI.writeFile(ideasPath, ideasTemplate);
-          // if (!ideasResult.success) {
-          //   throw new Error(
-          //     `Failed to create ideas file: ${ideasResult.error}`
-          //   );
-          // }
-
-          // Load the newly created project
-          await get().loadProject(projectDir);
-
-          console.log("New project created successfully!");
-        } catch (error) {
-          console.error("Error creating new project:", error);
-          throw error;
+      for (const dir of directories) {
+        const result = await fileAPI.createDirectory(dir);
+        if (!result.success) {
+          throw new Error(`Failed to create directory ${dir}: ${result.error}`);
         }
-      },
+      }
 
-      // Load existing project
-      loadProject: async (projectDir: string): Promise<void> => {
-        const fileAPI = getFileAPI();
+      // Create initial characters.json file
+      const charactersData = { characters: [] };
+      const charactersPath = `${projectDir}/characters/characters.json`;
+      const charactersResult = await fileAPI.writeFile(
+        charactersPath,
+        JSON.stringify(charactersData, null, 2)
+      );
 
-        console.log("Loading project from:", projectDir);
+      if (!charactersResult.success) {
+        throw new Error(
+          `Failed to create characters file: ${charactersResult.error}`
+        );
+      }
 
+      // Set project path and load
+      set({ projectPath: projectDir });
+      await get().loadProject(projectDir);
+
+      console.log("New project created successfully!");
+    } catch (error) {
+      console.error("Error creating new project:", error);
+      throw error;
+    }
+  },
+
+  loadProject: async (projectDir: string): Promise<void> => {
+    const fileAPI = getFileAPI();
+
+    try {
+      set({ projectPath: projectDir });
+
+      // Load characters
+      const charactersPath = `${projectDir}/characters/characters.json`;
+      const charactersResult = await fileAPI.readFile(charactersPath);
+      let characters: Character[] = [];
+
+      if (charactersResult.success && charactersResult.content) {
         try {
-          set({ projectPath: projectDir });
+          const charactersData = JSON.parse(charactersResult.content);
+          characters = charactersData.characters || [];
+          console.log("Loaded characters:", characters);
+        } catch (parseError) {
+          console.error("Error parsing characters.json:", parseError);
+        }
+      }
 
-          // Load characters
-          const charactersPath = `${projectDir}/characters/characters.json`;
-          const charactersResult = await fileAPI.readFile(charactersPath);
-          let characters: Character[] = [];
+      // Load chapters (existing logic)
+      const chaptersDir = `${projectDir}/chapters`;
+      const chaptersResult = await fileAPI.readDirectory(chaptersDir);
+      let chapters: Chapter[] = [];
 
-          if (charactersResult.success && charactersResult.content) {
-            try {
-              const parsed: CharactersData = JSON.parse(
-                charactersResult.content
-              );
-              characters = parsed.characters || [];
-            } catch (e) {
-              console.error("Error parsing characters:", e);
-            }
-          }
+      if (chaptersResult.success && chaptersResult.files) {
+        const mdFiles = chaptersResult.files.filter((f) => f.endsWith(".md"));
 
-          // Load chapters with better debugging
-          const chaptersDir = `${projectDir}/chapters`;
-          const chaptersResult = await fileAPI.readDirectory(chaptersDir);
-          let chapters: Chapter[] = [];
+        for (const filename of mdFiles) {
+          const filePath = `${chaptersDir}/${filename}`;
+          const fileResult = await fileAPI.readFile(filePath);
 
-          console.log("Chapters directory result:", chaptersResult);
+          if (fileResult.success && fileResult.content) {
+            // Parse frontmatter and content
+            const parts = fileResult.content.split("---");
+            let frontmatter: any = {};
+            let content = fileResult.content;
 
-          if (chaptersResult.success && chaptersResult.files) {
-            const mdFiles = chaptersResult.files.filter((f) =>
-              f.endsWith(".md")
-            );
-            console.log("Found markdown files:", mdFiles);
-
-            for (const filename of mdFiles) {
-              const filePath = `${chaptersDir}/${filename}`;
-              console.log(`Reading chapter file: ${filename}`);
-
-              const fileResult = await fileAPI.readFile(filePath);
-              console.log(`File read result for ${filename}:`, fileResult);
-
-              if (fileResult.success && fileResult.content) {
-                try {
-                  const parsed = matter(fileResult.content);
-                  console.log(
-                    `Parsed frontmatter for ${filename}:`,
-                    parsed.data
-                  );
-
-                  const chapter: Chapter = {
-                    id: filename.replace(".md", ""),
-                    filename,
-                    path: filePath,
-                    order: parsed.data.order || 0,
-                    title:
-                      parsed.data.title ||
-                      filename.replace(".md", "").replace(/^\d+-/, ""),
-                    tags: parsed.data.tags || [],
-                    characters: parsed.data.characters || [],
-                    location: parsed.data.location || "",
-                    content: parsed.content,
-                  };
-
-                  console.log(`Created chapter object:`, chapter);
-                  chapters.push(chapter);
-                } catch (e) {
-                  console.error(`Error parsing chapter ${filename}:`, e);
-                }
-              } else {
+            if (parts.length >= 3) {
+              try {
+                const yamlStr = parts[1].trim();
+                frontmatter = parseYAML(yamlStr);
+                content = parts.slice(2).join("---").trim();
+              } catch (error) {
                 console.error(
-                  `Failed to read file ${filename}:`,
-                  fileResult.error
+                  `Error parsing frontmatter in ${filename}:`,
+                  error
                 );
               }
             }
 
-            chapters.sort((a, b) => a.order - b.order);
-            console.log("Final sorted chapters:", chapters);
+            chapters.push({
+              id: filename.replace(".md", ""),
+              filename,
+              path: filePath,
+              order: frontmatter.order || 999,
+              title: frontmatter.title || filename.replace(".md", ""),
+              tags: frontmatter.tags || [],
+              characters: frontmatter.characters || [],
+              location: frontmatter.location || "",
+              content: fileResult.content,
+            });
+          } else {
+            console.error(`Failed to read file ${filename}:`, fileResult.error);
           }
+        }
 
-          // Load ideas
-          const ideasDir = `${projectDir}/ideas`;
-          const ideasResult = await fileAPI.readDirectory(ideasDir);
-          let ideas: Idea[] = [];
+        chapters.sort((a, b) => a.order - b.order);
+        console.log("Final sorted chapters:", chapters);
+      }
 
-          if (ideasResult.success && ideasResult.files) {
-            const mdFiles = ideasResult.files.filter((f) => f.endsWith(".md"));
+      // Load ideas
+      const ideasDir = `${projectDir}/ideas`;
+      const ideasResult = await fileAPI.readDirectory(ideasDir);
+      let ideas: Idea[] = [];
 
-            for (const filename of mdFiles) {
-              const filePath = `${ideasDir}/${filename}`;
-              const fileResult = await fileAPI.readFile(filePath);
+      if (ideasResult.success && ideasResult.files) {
+        const mdFiles = ideasResult.files.filter((f) => f.endsWith(".md"));
 
-              if (fileResult.success && fileResult.content) {
-                ideas.push({
-                  id: filename.replace(".md", ""),
-                  filename,
-                  path: filePath,
-                  content: fileResult.content,
-                });
-              }
+        for (const filename of mdFiles) {
+          const filePath = `${ideasDir}/${filename}`;
+          const fileResult = await fileAPI.readFile(filePath);
+
+          if (fileResult.success && fileResult.content) {
+            ideas.push({
+              id: filename.replace(".md", ""),
+              filename,
+              path: filePath,
+              content: fileResult.content,
+            });
+          }
+        }
+      }
+
+      // Update store state
+      set({
+        characters,
+        chapters,
+        ideas,
+        openTabs: [],
+        activeTab: null,
+      });
+
+      // Auto-open first chapter if available
+      if (chapters.length > 0) {
+        get().openTab(chapters[0]);
+      }
+
+      console.log("Project loaded successfully!");
+      console.log(`- Characters: ${characters.length}`);
+      console.log(`- Chapters: ${chapters.length}`);
+      console.log(`- Ideas: ${ideas.length}`);
+    } catch (error) {
+      console.error("Error loading project:", error);
+      throw error;
+    }
+  },
+
+  // Enhanced tab management
+  openTab: (item: Chapter | Idea) => {
+    const { openTabs } = get();
+    const existingTab = openTabs.find((tab) => tab.id === item.id);
+
+    if (existingTab) {
+      set({
+        activeTab: existingTab.id,
+        currentContent: existingTab.content,
+      });
+    } else {
+      const newTab: Tab = {
+        id: item.id,
+        name: "title" in item ? item.title : item.filename.replace(".md", ""),
+        type: "title" in item ? "chapter" : "idea",
+        path: item.path,
+        content: item.content,
+        modified: false,
+      };
+
+      set({
+        openTabs: [...openTabs, newTab],
+        activeTab: newTab.id,
+        currentContent: newTab.content,
+        isContentModified: false,
+      });
+    }
+  },
+
+  // NEW: Open character tab
+  openCharacterTab: (character: Character) => {
+    const { openTabs } = get();
+    const existingTab = openTabs.find((tab) => tab.id === character.id);
+
+    if (existingTab) {
+      set({
+        activeTab: existingTab.id,
+        currentContent: "", // Character editor doesn't use currentContent
+      });
+    } else {
+      const newTab: Tab = {
+        id: character.id,
+        name: character.name,
+        type: "character",
+        path: "", // Characters don't have individual file paths
+        content: "", // Character data is handled separately
+        modified: false,
+        characterData: character,
+      };
+
+      set({
+        openTabs: [...openTabs, newTab],
+        activeTab: newTab.id,
+        currentContent: "",
+        isContentModified: false,
+      });
+    }
+  },
+
+  closeTab: (tabId: string) => {
+    const { openTabs, activeTab } = get();
+    const updatedTabs = openTabs.filter((tab) => tab.id !== tabId);
+
+    let newActiveTab = activeTab;
+    if (activeTab === tabId) {
+      newActiveTab = updatedTabs.length > 0 ? updatedTabs[0].id : null;
+    }
+
+    set({
+      openTabs: updatedTabs,
+      activeTab: newActiveTab,
+      currentContent: newActiveTab
+        ? updatedTabs.find((t) => t.id === newActiveTab)?.content || ""
+        : "",
+      isContentModified: false,
+    });
+  },
+
+  updateContent: (content: string) => {
+    const { openTabs, activeTab } = get();
+
+    if (activeTab) {
+      const updatedTabs = openTabs.map((tab) =>
+        tab.id === activeTab ? { ...tab, content, modified: true } : tab
+      );
+
+      set({
+        openTabs: updatedTabs,
+        currentContent: content,
+        isContentModified: true,
+      });
+    }
+  },
+
+  saveCurrentFile: async (): Promise<void> => {
+    const { openTabs, activeTab, projectPath } = get();
+    const fileAPI = getFileAPI();
+
+    if (!activeTab || !projectPath) return;
+
+    const activeTabData = openTabs.find((tab) => tab.id === activeTab);
+    if (!activeTabData || !activeTabData.modified) return;
+
+    try {
+      const result = await fileAPI.writeFile(
+        activeTabData.path,
+        activeTabData.content
+      );
+      if (!result.success) {
+        throw new Error(`Failed to save file: ${result.error}`);
+      }
+
+      // Update tab as saved
+      const updatedTabs = openTabs.map((tab) =>
+        tab.id === activeTab ? { ...tab, modified: false } : tab
+      );
+
+      set({
+        openTabs: updatedTabs,
+        isContentModified: false,
+      });
+
+      console.log("File saved successfully!");
+    } catch (error) {
+      console.error("Error saving file:", error);
+      throw error;
+    }
+  },
+
+  // Enhanced character management
+  addCharacter: async (character: Omit<Character, "id">): Promise<void> => {
+    const { characters, projectPath } = get();
+    const fileAPI = getFileAPI();
+
+    if (!projectPath) return;
+
+    const newCharacter: Character = {
+      ...character,
+      id: character.name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(),
+    };
+
+    const updatedCharacters = [...characters, newCharacter];
+    const charactersData = { characters: updatedCharacters };
+
+    try {
+      const charactersPath = `${projectPath}/characters/characters.json`;
+      const result = await fileAPI.writeFile(
+        charactersPath,
+        JSON.stringify(charactersData, null, 2)
+      );
+
+      if (!result.success) {
+        throw new Error(`Failed to save characters: ${result.error}`);
+      }
+
+      set({ characters: updatedCharacters });
+      console.log("Character added successfully!");
+    } catch (error) {
+      console.error("Error adding character:", error);
+      throw error;
+    }
+  },
+
+  // NEW: Update character
+  updateCharacter: async (
+    id: string,
+    updates: Partial<Character>
+  ): Promise<void> => {
+    const { characters, projectPath, openTabs } = get();
+    const fileAPI = getFileAPI();
+
+    if (!projectPath) return;
+
+    const updatedCharacters = characters.map((char) =>
+      char.id === id ? { ...char, ...updates } : char
+    );
+
+    const charactersData = { characters: updatedCharacters };
+
+    try {
+      const charactersPath = `${projectPath}/characters/characters.json`;
+      const result = await fileAPI.writeFile(
+        charactersPath,
+        JSON.stringify(charactersData, null, 2)
+      );
+
+      if (!result.success) {
+        throw new Error(`Failed to update character: ${result.error}`);
+      }
+
+      // Update character data in open tabs
+      const updatedTabs = openTabs.map((tab) =>
+        tab.type === "character" && tab.id === id
+          ? {
+              ...tab,
+              characterData: updatedCharacters.find((c) => c.id === id),
+              modified: false,
             }
-          }
+          : tab
+      );
 
-          // Update store state
-          set({
-            characters,
-            chapters,
-            ideas,
-            openTabs: [],
-            activeTab: null,
-          });
+      set({
+        characters: updatedCharacters,
+        openTabs: updatedTabs,
+      });
 
-          // Auto-open first chapter if available
-          if (chapters.length > 0) {
-            get().openTab(chapters[0]);
-          }
+      console.log("Character updated successfully!");
+    } catch (error) {
+      console.error("Error updating character:", error);
+      throw error;
+    }
+  },
 
-          console.log("Project loaded successfully!");
-          console.log(`- Characters: ${characters.length}`);
-          console.log(`- Chapters: ${chapters.length}`);
-          console.log(`- Ideas: ${ideas.length}`);
-        } catch (error) {
-          console.error("Error loading project:", error);
-          throw error;
-        }
-      },
+  // NEW: Delete character
+  deleteCharacter: async (id: string): Promise<boolean> => {
+    const { characters, projectPath, openTabs } = get();
+    const fileAPI = getFileAPI();
 
-      // Open tab
-      openTab: (item: Chapter | Idea) => {
-        const { openTabs } = get();
-        const existingTab = openTabs.find((tab) => tab.id === item.id);
+    if (!projectPath) return false;
 
-        if (existingTab) {
-          set({
-            activeTab: existingTab.id,
-            currentContent: existingTab.content,
-          });
-        } else {
-          const newTab: Tab = {
-            id: item.id,
-            name:
-              "title" in item ? item.title : item.filename.replace(".md", ""),
-            type: "title" in item ? "chapter" : "idea",
-            path: item.path,
-            content: item.content,
-            modified: false,
-          };
+    // Check if character is in use
+    const usage = get().getCharacterUsage(id);
+    if (usage.length > 0) {
+      console.warn(`Cannot delete character: used in ${usage.length} files`);
+      return false;
+    }
 
-          set({
-            openTabs: [...openTabs, newTab],
-            activeTab: newTab.id,
-            currentContent: newTab.content,
-            isContentModified: false,
-          });
-        }
-      },
+    const updatedCharacters = characters.filter((char) => char.id !== id);
+    const charactersData = { characters: updatedCharacters };
 
-      // Close tab
-      closeTab: (tabId: string) => {
-        const { openTabs, activeTab } = get();
-        const updatedTabs = openTabs.filter((tab) => tab.id !== tabId);
+    try {
+      const charactersPath = `${projectPath}/characters/characters.json`;
+      const result = await fileAPI.writeFile(
+        charactersPath,
+        JSON.stringify(charactersData, null, 2)
+      );
 
-        let newActiveTab = activeTab;
-        if (activeTab === tabId) {
-          newActiveTab = updatedTabs.length > 0 ? updatedTabs[0].id : null;
-        }
+      if (!result.success) {
+        throw new Error(`Failed to delete character: ${result.error}`);
+      }
 
-        set({
-          openTabs: updatedTabs,
-          activeTab: newActiveTab,
-          currentContent: newActiveTab
-            ? updatedTabs.find((t) => t.id === newActiveTab)?.content || ""
-            : "",
-          isContentModified: false,
+      // Close character tab if open
+      const updatedTabs = openTabs.filter(
+        (tab) => !(tab.type === "character" && tab.id === id)
+      );
+      const newActiveTab = updatedTabs.length > 0 ? updatedTabs[0].id : null;
+
+      set({
+        characters: updatedCharacters,
+        openTabs: updatedTabs,
+        activeTab: newActiveTab,
+      });
+
+      console.log("Character deleted successfully!");
+      return true;
+    } catch (error) {
+      console.error("Error deleting character:", error);
+      throw error;
+    }
+  },
+
+  // NEW: Get character usage
+  getCharacterUsage: (characterId: string): CharacterUsage[] => {
+    const { characters, chapters, ideas } = get();
+    const character = characters.find((c) => c.id === characterId);
+    if (!character) return [];
+
+    const usage: CharacterUsage[] = [];
+
+    // Check chapters
+    chapters.forEach((chapter) => {
+      // Check frontmatter
+      if (
+        chapter.characters.includes(characterId) ||
+        chapter.characters.includes(character.name)
+      ) {
+        usage.push({
+          id: chapter.id,
+          type: "chapter",
+          filename: chapter.filename,
+          title: chapter.title,
+          usageType: "frontmatter",
         });
-      },
+      }
 
-      // Update content
-      updateContent: (content: string) => {
-        const { openTabs, activeTab } = get();
+      // Check dialogue patterns
+      const dialoguePattern = new RegExp(`^\\s*${character.name}\\s*:`, "gm");
+      const dialogueMatches = chapter.content.match(dialoguePattern);
+      if (dialogueMatches) {
+        usage.push({
+          id: chapter.id,
+          type: "chapter",
+          filename: chapter.filename,
+          title: chapter.title,
+          usageType: "dialogue",
+          context: dialogueMatches[0],
+        });
+      }
 
-        if (activeTab) {
-          const updatedTabs = openTabs.map((tab) =>
-            tab.id === activeTab ? { ...tab, content, modified: true } : tab
-          );
+      // Check narrative mentions
+      const narrativePattern = new RegExp(`\\b${character.name}\\b`, "g");
+      const narrativeMatches = chapter.content.match(narrativePattern);
+      if (
+        narrativeMatches &&
+        narrativeMatches.length > (dialogueMatches?.length || 0)
+      ) {
+        usage.push({
+          id: chapter.id,
+          type: "chapter",
+          filename: chapter.filename,
+          title: chapter.title,
+          usageType: "narrative",
+        });
+      }
+    });
 
-          set({
-            openTabs: updatedTabs,
-            currentContent: content,
-            isContentModified: true,
-          });
-        }
-      },
+    // Check ideas
+    ideas.forEach((idea) => {
+      if (idea.content.includes(character.name)) {
+        usage.push({
+          id: idea.id,
+          type: "idea",
+          filename: idea.filename,
+          title: idea.filename.replace(".md", ""),
+          usageType: "narrative",
+        });
+      }
+    });
 
-      // Save current file
-      saveCurrentFile: async (): Promise<void> => {
-        const { openTabs, activeTab, projectPath } = get();
-        const fileAPI = getFileAPI();
+    return usage;
+  },
 
-        if (!activeTab || !projectPath) return;
+  // Existing methods...
+  addChapter: async (title: string): Promise<void> => {
+    const { chapters, projectPath } = get();
+    const fileAPI = getFileAPI();
 
-        const activeTabData = openTabs.find((tab) => tab.id === activeTab);
-        if (!activeTabData || !activeTabData.modified) return;
+    if (!projectPath) return;
 
-        try {
-          const result = await fileAPI.writeFile(
-            activeTabData.path,
-            activeTabData.content
-          );
-          if (!result.success) {
-            throw new Error(`Failed to save file: ${result.error}`);
-          }
+    const nextOrder = Math.max(...chapters.map((c) => c.order), 0) + 1;
+    const filename = `${nextOrder.toString().padStart(3, "0")}-${title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")}.md`;
 
-          // Update tab as saved
-          const updatedTabs = openTabs.map((tab) =>
-            tab.id === activeTab ? { ...tab, modified: false } : tab
-          );
-
-          set({
-            openTabs: updatedTabs,
-            isContentModified: false,
-          });
-
-          console.log("File saved successfully!");
-        } catch (error) {
-          console.error("Error saving file:", error);
-          throw error;
-        }
-      },
-
-      // Add character
-      addCharacter: async (character: Omit<Character, "id">): Promise<void> => {
-        const { characters, projectPath } = get();
-        const fileAPI = getFileAPI();
-
-        if (!projectPath) return;
-
-        const newCharacter: Character = {
-          ...character,
-          id:
-            character.name.toLowerCase().replace(/\s+/g, "-") +
-            "-" +
-            Date.now(),
-        };
-
-        const updatedCharacters = [...characters, newCharacter];
-        const charactersData: CharactersData = {
-          characters: updatedCharacters,
-        };
-
-        try {
-          const charactersPath = `${projectPath}/characters/characters.json`;
-          const result = await fileAPI.writeFile(
-            charactersPath,
-            JSON.stringify(charactersData, null, 2)
-          );
-
-          if (!result.success) {
-            throw new Error(`Failed to save characters: ${result.error}`);
-          }
-
-          set({ characters: updatedCharacters });
-          console.log("Character added successfully!");
-        } catch (error) {
-          console.error("Error adding character:", error);
-          throw error;
-        }
-      },
-
-      // Add chapter - Fixed to get proper order
-      addChapter: async (title: string): Promise<void> => {
-        const { chapters, projectPath } = get();
-        const fileAPI = getFileAPI();
-
-        if (!projectPath) return;
-
-        // Find the highest order number from existing chapters + 1
-        const maxOrder =
-          chapters.length > 0 ? Math.max(...chapters.map((ch) => ch.order)) : 0;
-        const newOrder = maxOrder + 1;
-
-        console.log(`Adding chapter: "${title}"`);
-        console.log(
-          `Current chapters:`,
-          chapters.map((ch) => ({ order: ch.order, title: ch.title }))
-        );
-        console.log(`Max order: ${maxOrder}, New order: ${newOrder}`);
-
-        // Create filename with proper title slug
-        const titleSlug = title
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-          .replace(/\s+/g, "-") // Replace spaces with dashes
-          .replace(/-+/g, "-") // Replace multiple dashes with single dash
-          .trim();
-
-        const filename = `${newOrder
-          .toString()
-          .padStart(3, "0")}-${titleSlug}.md`;
-        const filePath = `${projectPath}/chapters/${filename}`;
-
-        console.log(`Creating file: ${filename}`);
-
-        const chapterTemplate = `---
-order: ${newOrder}
+    const frontmatter = `---
+order: ${nextOrder}
 title: "${title}"
 tags: []
 characters: []
@@ -471,126 +565,138 @@ location: ""
 
 # ${title}
 
-Write your chapter here...
+Start writing your chapter here...
 `;
 
-        try {
-          const result = await fileAPI.writeFile(filePath, chapterTemplate);
-          if (!result.success) {
-            throw new Error(`Failed to create chapter: ${result.error}`);
-          }
+    try {
+      const filePath = `${projectPath}/chapters/${filename}`;
+      const result = await fileAPI.writeFile(filePath, frontmatter);
 
-          const newChapter: Chapter = {
-            id: filename.replace(".md", ""),
-            filename,
-            path: filePath,
-            order: newOrder,
-            title,
-            tags: [],
-            characters: [],
-            location: "",
-            content: `# ${title}\n\nWrite your chapter here...`,
-          };
+      if (!result.success) {
+        throw new Error(`Failed to create chapter: ${result.error}`);
+      }
 
-          const newChapters = [...chapters, newChapter].sort(
-            (a, b) => a.order - b.order
-          );
+      const newChapter: Chapter = {
+        id: filename.replace(".md", ""),
+        filename,
+        path: filePath,
+        order: nextOrder,
+        title,
+        tags: [],
+        characters: [],
+        location: "",
+        content: frontmatter,
+      };
 
-          console.log(`Chapter created successfully:`, newChapter);
-          console.log(
-            `Updated chapters list:`,
-            newChapters.map((ch) => ({ order: ch.order, title: ch.title }))
-          );
+      const updatedChapters = [...chapters, newChapter].sort(
+        (a, b) => a.order - b.order
+      );
 
-          set({ chapters: newChapters });
+      set({ chapters: updatedChapters });
+      console.log("Chapter added successfully!");
+    } catch (error) {
+      console.error("Error adding chapter:", error);
+      throw error;
+    }
+  },
 
-          // Auto-open the new chapter
-          get().openTab(newChapter);
-          console.log("Chapter added:", title);
-        } catch (error) {
-          console.error("Error adding chapter:", error);
-          throw error;
-        }
-      },
+  addIdea: async (name: string): Promise<void> => {
+    const { ideas, projectPath } = get();
+    const fileAPI = getFileAPI();
 
-      // Add idea
-      addIdea: async (name: string): Promise<void> => {
-        const { ideas, projectPath } = get();
-        const fileAPI = getFileAPI();
+    if (!projectPath) return;
 
-        if (!projectPath) return;
+    const filename = `${name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")}.md`;
 
-        const nameSlug = name
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .trim();
-
-        const filename = `${nameSlug}.md`;
-        const filePath = `${projectPath}/ideas/${filename}`;
-
-        const ideaTemplate = `# ${name}
+    const content = `# ${name}
 
 Write your ideas here...
-
-## Notes
-- Add your notes
-- Brainstorm concepts
-- Develop themes
 `;
 
-        try {
-          const result = await fileAPI.writeFile(filePath, ideaTemplate);
-          if (!result.success) {
-            throw new Error(`Failed to create idea: ${result.error}`);
-          }
+    try {
+      const filePath = `${projectPath}/ideas/${filename}`;
+      const result = await fileAPI.writeFile(filePath, content);
 
-          const newIdea: Idea = {
-            id: filename.replace(".md", ""),
-            filename,
-            path: filePath,
-            content: ideaTemplate,
-          };
+      if (!result.success) {
+        throw new Error(`Failed to create idea: ${result.error}`);
+      }
 
-          const newIdeas = [...ideas, newIdea];
-          set({ ideas: newIdeas });
+      const newIdea: Idea = {
+        id: filename.replace(".md", ""),
+        filename,
+        path: filePath,
+        content,
+      };
 
-          // Auto-open the new idea
-          get().openTab(newIdea);
-          console.log("Idea added:", name);
-        } catch (error) {
-          console.error("Error adding idea:", error);
-          throw error;
-        }
-      },
-
-      // Insert dialogue (placeholder - will be implemented with editor)
-      insertDialogue: (characterName: string, dialogue: string) => {
-        console.log(`Inserting dialogue for ${characterName}: "${dialogue}"`);
-        // This will be implemented when we have the TipTap editor integration
-      },
-
-      // Clear project data
-      clearProject: () => {
-        console.log("Clearing project data");
-        set({
-          projectPath: null,
-          characters: [],
-          chapters: [],
-          ideas: [],
-          openTabs: [],
-          activeTab: null,
-          currentContent: "",
-          isContentModified: false,
-        });
-      },
-    }),
-    {
-      name: "novel-ide-storage",
-      partialize: (state) => ({
-        projectPath: state.projectPath,
-      }),
+      set({ ideas: [...ideas, newIdea] });
+      console.log("Idea added successfully!");
+    } catch (error) {
+      console.error("Error adding idea:", error);
+      throw error;
     }
-  )
-);
+  },
+
+  insertDialogue: (characterName: string, dialogue: string) => {
+    // This method can be enhanced later for smarter dialogue insertion
+    const dialogueText = `${characterName}: "${dialogue}"`;
+    const { currentContent } = get();
+    const newContent = currentContent + "\n\n" + dialogueText + "\n\n";
+    get().updateContent(newContent);
+  },
+}));
+
+// Helper function to parse YAML frontmatter
+function parseYAML(yamlStr: string): any {
+  const lines = yamlStr.split("\n");
+  const result: any = {};
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const colonIndex = trimmed.indexOf(":");
+    if (colonIndex === -1) continue;
+
+    const key = trimmed.substring(0, colonIndex).trim();
+    let value: any = trimmed.substring(colonIndex + 1).trim();
+
+    // Remove quotes
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    // Parse arrays
+    if (value.startsWith("[") && value.endsWith("]")) {
+      const arrayContent = value.slice(1, -1).trim();
+      if (arrayContent) {
+        value = arrayContent.split(",").map((item: string) => {
+          item = item.trim();
+          if (
+            (item.startsWith('"') && item.endsWith('"')) ||
+            (item.startsWith("'") && item.endsWith("'"))
+          ) {
+            return item.slice(1, -1);
+          }
+          return item;
+        });
+      } else {
+        value = [];
+      }
+    }
+
+    // Parse numbers
+    if (!isNaN(Number(value)) && value !== "") {
+      value = Number(value);
+    }
+
+    result[key] = value;
+  }
+
+  return result;
+}

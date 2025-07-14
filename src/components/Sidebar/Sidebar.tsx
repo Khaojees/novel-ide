@@ -13,6 +13,7 @@ const Sidebar: React.FC = () => {
     chapters,
     ideas,
     openTab,
+    openCharacterTab,
     addCharacter,
     addChapter,
     addIdea,
@@ -24,9 +25,14 @@ const Sidebar: React.FC = () => {
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
 
-  const handleItemClick = (item: Chapter | Idea) => {
+  const handleChapterOrIdeaClick = (item: Chapter | Idea) => {
     console.log("Opening:", item);
     openTab(item);
+  };
+
+  const handleCharacterClick = (character: Character) => {
+    console.log("Opening character:", character);
+    openCharacterTab(character);
   };
 
   const handleAddCharacter = () => {
@@ -41,14 +47,15 @@ const Sidebar: React.FC = () => {
     setShowIdeaModal(true);
   };
 
-  const renderSection = (
+  // Generic section renderer for chapters and ideas
+  const renderChapterOrIdeaSection = (
     title: string,
-    items: (Chapter | Idea | Character)[],
+    items: (Chapter | Idea)[],
     icon: React.ReactNode,
     onAdd: () => void,
-    onItemClick?: (item: Chapter | Idea) => void
+    sectionType: "chapters" | "ideas"
   ) => (
-    <div className="sidebar-section">
+    <div className={`sidebar-section ${sectionType}`}>
       <div className="section-header">
         <div className="section-title">
           {icon}
@@ -68,14 +75,10 @@ const Sidebar: React.FC = () => {
           <div
             key={item.id}
             className="sidebar-item"
-            onClick={() => onItemClick && onItemClick(item as Chapter | Idea)}
+            onClick={() => handleChapterOrIdeaClick(item)}
           >
             <span className="item-name">
-              {"title" in item
-                ? item.title
-                : "name" in item
-                ? item.name
-                : item.filename}
+              {"title" in item ? item.title : item.filename}
             </span>
           </div>
         ))}
@@ -83,6 +86,50 @@ const Sidebar: React.FC = () => {
         <button className="add-button" onClick={onAdd}>
           <Plus size={14} />
           <span>Add {title.slice(0, -1)}</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  // Specific character section renderer
+  const renderCharacterSection = () => (
+    <div className="sidebar-section characters">
+      <div className="section-header">
+        <div className="section-title">
+          <Users size={16} />
+          <h3>Characters</h3>
+        </div>
+        <button
+          className="add-icon-btn"
+          onClick={handleAddCharacter}
+          title="Add Character"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      <div className="section-items">
+        {characters.map((character) => (
+          <div
+            key={character.id}
+            className="sidebar-item"
+            onClick={() => handleCharacterClick(character)}
+            title={
+              character.traits || character.bio || "Click to edit character"
+            }
+          >
+            <span className="item-name">{character.name}</span>
+            {!character.active && (
+              <span className="inactive-indicator" title="Inactive character">
+                ●
+              </span>
+            )}
+          </div>
+        ))}
+
+        <button className="add-button" onClick={handleAddCharacter}>
+          <Plus size={14} />
+          <span>Add Character</span>
         </button>
       </div>
     </div>
@@ -111,27 +158,25 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {renderSection(
-        "Characters",
-        characters,
-        <Users size={16} />,
-        handleAddCharacter
-      )}
+      {/* Characters Section - Type-safe */}
+      {renderCharacterSection()}
 
-      {renderSection(
+      {/* Chapters Section - Type-safe */}
+      {renderChapterOrIdeaSection(
         "Chapters",
         chapters,
         <BookOpen size={16} />,
         handleAddChapter,
-        handleItemClick
+        "chapters"
       )}
 
-      {renderSection(
+      {/* Ideas Section - Type-safe */}
+      {renderChapterOrIdeaSection(
         "Ideas",
         ideas,
         <Lightbulb size={16} />,
         handleAddIdea,
-        handleItemClick
+        "ideas"
       )}
 
       {/* Character Modal */}

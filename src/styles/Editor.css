@@ -1,4 +1,3 @@
-/* src/styles/Editor.css */
 
 .editor-container {
   flex: 1;
@@ -7,58 +6,179 @@
   flex-direction: column;
 }
 
+/* ===== ENHANCED TABS ===== */
 .editor-tabs {
   display: flex;
   background-color: #161b22;
   border-bottom: 1px solid #30363d;
   padding: 0 1rem;
   overflow-x: auto;
+  align-items: flex-end;
 }
 
+.editor-tabs::-webkit-scrollbar {
+  height: 2px;
+}
+
+.editor-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-tabs::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 1px;
+}
+
+/* ===== BASE TAB STYLES ===== */
 .editor-tab {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
   color: #8b949e;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
   white-space: nowrap;
-  font-size: 0.9rem;
-}
-
-.editor-tab.active {
-  color: #e6edf3;
-  border-bottom-color: #3b82f6;
+  font-size: 0.85rem;
+  position: relative;
+  min-width: 120px;
+  max-width: 200px;
 }
 
 .editor-tab:hover {
   color: #e6edf3;
-  background-color: #21262d;
+  background: #161b22;
+}
+
+.editor-tab.active {
+  color: #e6edf3;
+  background: #161b22;
+  border-color: #30363d;
+  z-index: 1;
+}
+
+/* ===== TAB CONTENT ELEMENTS ===== */
+.tab-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.tab-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modified-indicator {
-  color: #f85149;
+  color: #ff6b6b;
   font-weight: bold;
+  flex-shrink: 0;
+  font-size: 1rem;
 }
 
 .tab-close {
-  padding: 2px;
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
+  background: none;
   border: none;
-  background: transparent;
-  color: inherit;
+  color: #6e7681;
   cursor: pointer;
+  padding: 2px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.editor-tab:hover .tab-close {
+  opacity: 1;
 }
 
 .tab-close:hover {
-  background-color: #30363d;
+  background: #30363d;
+  color: #e6edf3;
 }
 
+/* ===== CHARACTER TABS (GREEN) ===== */
+.editor-tab.character {
+  border-top: 3px solid var(--character-color);
+  background: linear-gradient(to bottom, var(--character-bg), #21262d);
+}
+
+.editor-tab.character.active {
+  background: linear-gradient(to bottom, var(--character-bg), #161b22);
+  border-left-color: var(--character-color);
+  border-right-color: var(--character-color);
+}
+
+.editor-tab.character:hover {
+  background: linear-gradient(to bottom, var(--character-bg), #161b22);
+}
+
+.editor-tab.character .modified-indicator {
+  color: var(--character-color);
+}
+
+.editor-tab.character .tab-icon {
+  color: var(--character-color);
+}
+
+/* ===== CHAPTER TABS (BLUE) ===== */
+.editor-tab.chapter {
+  border-top: 3px solid var(--chapter-color);
+  background: linear-gradient(to bottom, var(--chapter-bg), #21262d);
+}
+
+.editor-tab.chapter.active {
+  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
+  border-left-color: var(--chapter-color);
+  border-right-color: var(--chapter-color);
+}
+
+.editor-tab.chapter:hover {
+  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
+}
+
+.editor-tab.chapter .modified-indicator {
+  color: var(--chapter-color);
+}
+
+.editor-tab.chapter .tab-icon {
+  color: var(--chapter-color);
+}
+
+/* ===== IDEA TABS (YELLOW) ===== */
+.editor-tab.idea {
+  border-top: 3px solid var(--idea-color);
+  background: linear-gradient(to bottom, var(--idea-bg), #21262d);
+}
+
+.editor-tab.idea.active {
+  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
+  border-left-color: var(--idea-color);
+  border-right-color: var(--idea-color);
+}
+
+.editor-tab.idea:hover {
+  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
+}
+
+.editor-tab.idea .modified-indicator {
+  color: var(--idea-color);
+}
+
+.editor-tab.idea .tab-icon {
+  color: var(--idea-color);
+}
+
+/* ===== EDITOR CONTENT ===== */
 .editor-content {
   flex: 1;
   overflow: hidden;
@@ -70,6 +190,7 @@
   flex-direction: column;
 }
 
+/* ===== ENHANCED TOOLBAR ===== */
 .editor-toolbar {
   display: flex;
   align-items: center;
@@ -77,6 +198,12 @@
   padding: 0.75rem 1rem;
   background-color: #161b22;
   border-bottom: 1px solid #30363d;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .toolbar-button {
@@ -102,13 +229,52 @@
   cursor: not-allowed;
 }
 
+/* File type badge */
+.file-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.file-type-badge.character-theme {
+  background: var(--character-bg);
+  border-color: var(--character-color);
+  color: var(--character-color);
+}
+
+.file-type-badge.chapter-theme {
+  background: var(--chapter-bg);
+  border-color: var(--chapter-color);
+  color: var(--chapter-color);
+}
+
+.file-type-badge.idea-theme {
+  background: var(--idea-bg);
+  border-color: var(--idea-color);
+  color: var(--idea-color);
+}
+
 .editor-info {
   display: flex;
   gap: 1rem;
   color: #6e7681;
   font-size: 0.8rem;
+  align-items: center;
 }
 
+.unsaved-indicator {
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+/* ===== TEXT AREA ===== */
 .editor-textarea {
   flex: 1;
   padding: 2rem;
@@ -127,6 +293,7 @@
   font-style: italic;
 }
 
+/* ===== ENHANCED PLACEHOLDER ===== */
 .editor-placeholder {
   display: flex;
   flex-direction: column;
@@ -152,7 +319,7 @@
 .editor-tips {
   text-align: left;
   color: #8b949e;
-  max-width: 400px;
+  max-width: 500px;
 }
 
 .editor-tips h4 {
@@ -167,186 +334,66 @@
 }
 
 .editor-tips li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 0.5rem 0;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
-.editor-tips li:before {
-  content: "→ ";
-  color: #3b82f6;
-  font-weight: bold;
-  margin-right: 0.5rem;
+.tip-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
+/* ===== ANIMATIONS ===== */
+@keyframes tab-open {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
 
-/* ===== TAB COLORS ===== */
-
-/* Base tab styles */
 .editor-tab {
-  position: relative;
-  background: #21262d;
-  border: 1px solid #30363d;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  padding: 8px 16px;
-  color: #e6edf3;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  animation: tab-open 0.2s ease-out;
 }
 
-/* Character Tabs */
-.editor-tab.character {
-  border-top: 3px solid var(--character-color);
-  background: linear-gradient(to bottom, var(--character-bg), #21262d);
-}
-
-.editor-tab.character.active {
-  background: linear-gradient(to bottom, var(--character-bg), #161b22);
-  border-color: var(--character-color);
-  box-shadow: 0 0 0 1px var(--character-color);
-}
-
-.editor-tab.character:hover {
-  background: linear-gradient(to bottom, var(--character-bg), #161b22);
-  border-top-color: var(--character-color);
-}
-
-/* Chapter Tabs */
-.editor-tab.chapter {
-  border-top: 3px solid var(--chapter-color);
-  background: linear-gradient(to bottom, var(--chapter-bg), #21262d);
-}
-
-.editor-tab.chapter.active {
-  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
-  border-color: var(--chapter-color);
-  box-shadow: 0 0 0 1px var(--chapter-color);
-}
-
-.editor-tab.chapter:hover {
-  background: linear-gradient(to bottom, var(--chapter-bg), #161b22);
-  border-top-color: var(--chapter-color);
-}
-
-/* Idea Tabs */
-.editor-tab.idea {
-  border-top: 3px solid var(--idea-color);
-  background: linear-gradient(to bottom, var(--idea-bg), #21262d);
-}
-
-.editor-tab.idea.active {
-  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
-  border-color: var(--idea-color);
-  box-shadow: 0 0 0 1px var(--idea-color);
-}
-
-.editor-tab.idea:hover {
-  background: linear-gradient(to bottom, var(--idea-bg), #161b22);
-  border-top-color: var(--idea-color);
-}
-
-/* ===== TAB ICONS ===== */
-
-/* Icon prefix for tabs */
-.editor-tab::before {
-  content: '';
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 6px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.editor-tab.character::before {
-  content: '👤';
-  filter: hue-rotate(120deg); /* เขียว */
-}
-
-.editor-tab.chapter::before {
-  content: '📖';
-  filter: hue-rotate(210deg); /* น้ำเงิน */
-}
-
-.editor-tab.idea::before {
-  content: '💡';
-  filter: hue-rotate(45deg); /* เหลือง */
-}
-
-/* ===== MODIFIED INDICATORS ===== */
-
-/* Dot indicator for modified files */
-.editor-tab.modified::after {
-  content: '';
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ff6b6b;
-}
-
-.editor-tab.character.modified::after {
-  background: var(--character-color);
-}
-
-.editor-tab.chapter.modified::after {
-  background: var(--chapter-color);
-}
-
-.editor-tab.idea.modified::after {
-  background: var(--idea-color);
-}
-
-/* ===== RESPONSIVE ADJUSTMENTS ===== */
-
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .editor-tab {
-    padding: 6px 12px;
-    font-size: 0.85rem;
+  .editor-tabs {
+    padding: 0 8px;
   }
   
-  .editor-tab::before {
-    width: 10px;
-    height: 10px;
-    margin-right: 4px;
+  .editor-tab {
+    min-width: 100px;
+    max-width: 150px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
   }
-}
-
-/* ===== DARK MODE ADJUSTMENTS ===== */
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --character-color: #34d399;  /* เขียวสว่างขึ้น */
-    --chapter-color: #60a5fa;    /* น้ำเงินสว่างขึ้น */
-    --idea-color: #fbbf24;       /* เหลืองสว่างขึ้น */
+  
+  .toolbar-left {
+    gap: 8px;
+  }
+  
+  .file-type-badge {
+    display: none;
+  }
+  
+  .editor-info {
+    gap: 8px;
+    font-size: 0.75rem;
   }
 }
 
 /* ===== ACCESSIBILITY ===== */
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .editor-tab.character {
-    border-top-width: 4px;
-  }
-  
-  .editor-tab.chapter {
-    border-top-width: 4px;
-  }
-  
-  .editor-tab.idea {
-    border-top-width: 4px;
-  }
-}
-
-/* Focus states for keyboard navigation */
 .editor-tab:focus {
   outline: 2px solid var(--chapter-color);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .editor-tab.character:focus {
@@ -355,4 +402,20 @@
 
 .editor-tab.idea:focus {
   outline-color: var(--idea-color);
+}
+
+.tab-close:focus {
+  opacity: 1;
+  outline: 1px solid #6e7681;
+  outline-offset: 1px;
+}
+
+/* ===== DRAG AND DROP (FUTURE) ===== */
+.editor-tab.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.editor-tab.drop-target {
+  border-left: 3px solid #58a6ff;
 }

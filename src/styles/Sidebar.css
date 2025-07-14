@@ -1,4 +1,4 @@
-/* src/styles/Sidebar.css */
+/* src/styles/Sidebar.css - Enhanced with Character States */
 
 .sidebar {
   width: 280px;
@@ -92,6 +92,7 @@
 .sidebar-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   padding: 8px 12px;
   border-radius: 6px;
@@ -112,6 +113,33 @@
 .sidebar-item.active {
   background-color: #3b82f6;
   color: white;
+}
+
+.item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Character-specific styling */
+.sidebar-section.characters .sidebar-item {
+  position: relative;
+}
+
+.inactive-indicator {
+  color: #6e7681;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sidebar-section.characters .sidebar-item:has(.inactive-indicator) {
+  opacity: 0.6;
+}
+
+.sidebar-section.characters .sidebar-item:has(.inactive-indicator):hover {
+  opacity: 1;
 }
 
 .add-button {
@@ -156,6 +184,11 @@
   background: var(--character-bg);
 }
 
+.sidebar-section.characters .sidebar-item:hover {
+  background-color: var(--character-bg);
+  border-left: 2px solid var(--character-color);
+}
+
 /* Chapters Section */
 .sidebar-section.chapters {
   border-left: 3px solid var(--chapter-color);
@@ -177,6 +210,11 @@
   background: var(--chapter-bg);
 }
 
+.sidebar-section.chapters .sidebar-item:hover {
+  background-color: var(--chapter-bg);
+  border-left: 2px solid var(--chapter-color);
+}
+
 /* Ideas Section */
 .sidebar-section.ideas {
   border-left: 3px solid var(--idea-color);
@@ -196,4 +234,57 @@
   border-color: var(--idea-color);
   color: var(--idea-color);
   background: var(--idea-bg);
+}
+
+.sidebar-section.ideas .sidebar-item:hover {
+  background-color: var(--idea-bg);
+  border-left: 2px solid var(--idea-color);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+    padding: 0.75rem;
+  }
+  
+  .sidebar-item {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .add-button {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+.sidebar-item:focus {
+  outline: 2px solid var(--chapter-color);
+  outline-offset: -2px;
+}
+
+.sidebar-section.characters .sidebar-item:focus {
+  outline-color: var(--character-color);
+}
+
+.sidebar-section.ideas .sidebar-item:focus {
+  outline-color: var(--idea-color);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes item-add {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-item {
+  animation: item-add 0.2s ease-out;
 }
