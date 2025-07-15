@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Plus, Users, BookOpen, Lightbulb } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
-import { Character, Chapter, Idea } from "../../type";
+import { Character, Chapter, Idea } from "../../types";
 import { CharacterModal } from "./components/CharacterModal";
 import { ChapterModal } from "./components/ChapterModal";
 import { IdeaModal } from "./components/IdeaModal";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Character } from "../../../type";
+import { Character } from "../../../types";
 
 // Simple Modal Components
 interface CharacterModalProps {

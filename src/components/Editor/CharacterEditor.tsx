@@ -9,7 +9,7 @@ import {
   Lightbulb,
   Trash2,
 } from "lucide-react";
-import { Character, CharacterUsage, CharacterFormData } from "../../type";
+import { Character, CharacterUsage, CharacterFormData } from "../../types";
 
 interface CharacterEditorProps {
   character: Character;

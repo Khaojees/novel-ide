@@ -1,5 +1,5 @@
 // src/api/mockFileAPI.ts
-import { ElectronAPI } from "../type";
+import { ElectronAPI } from "../types";
 
 // Mock file system using localStorage
 class MockFileSystem {

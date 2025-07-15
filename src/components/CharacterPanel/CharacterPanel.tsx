@@ -1,13 +1,25 @@
-// src/components/CharacterPanel/CharacterPanel.tsx
+// src/components/CharacterPanel/CharacterPanel.tsx - Updated for Structured Editor
 import React, { useState, useMemo } from "react";
-import { Search, Pin, PinOff, User } from "lucide-react";
+import {
+  Search,
+  Pin,
+  PinOff,
+  User,
+  Plus,
+  Edit3,
+  Eye,
+  MessageCircle,
+  BookOpen,
+} from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
-import { Character } from "../../type";
+import { CharacterContext } from "../../types/structured";
+import { Character } from "../../types";
 
 interface CharacterPanelProps {}
 
 const CharacterPanel: React.FC<CharacterPanelProps> = () => {
-  const { characters } = useProjectStore();
+  const { characters, getCharacterUsage, openCharacterTab } = useProjectStore();
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [dialogueInputs, setDialogueInputs] = useState<Record<string, string>>(
     {}
@@ -30,7 +42,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       const bPinned = pinnedCharacters.has(b.id);
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      return 0;
+      return a.name.localeCompare(b.name);
     });
   }, [characters, searchQuery, pinnedCharacters]);
 
@@ -49,11 +61,12 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     const dialogue = dialogueInputs[character.id]?.trim();
     if (!dialogue) return;
 
-    // Send custom event to editor for cursor insertion
+    // Send custom event to structured editor for dialogue insertion
     const event = new CustomEvent("insertDialogue", {
       detail: {
-        characterName: character.name,
-        dialogue: dialogue,
+        characterId: character.id,
+        text: dialogue,
+        context: "dialogue" as CharacterContext,
       },
     });
     window.dispatchEvent(event);
@@ -63,6 +76,20 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       ...prev,
       [character.id]: "",
     }));
+  };
+
+  const handleInsertCharacter = (
+    character: Character,
+    context: CharacterContext
+  ) => {
+    // Send custom event to structured editor for character insertion
+    const event = new CustomEvent("insertCharacterTag", {
+      detail: {
+        characterId: character.id,
+        context: context,
+      },
+    });
+    window.dispatchEvent(event);
   };
 
   const handleKeyPress = (
@@ -77,130 +104,258 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
 
   const handleTogglePin = (characterId: string) => {
     setPinnedCharacters((prev) => {
-      const newPinned = new Set(prev);
-      if (newPinned.has(characterId)) {
-        newPinned.delete(characterId);
+      const newSet = new Set(prev);
+      if (newSet.has(characterId)) {
+        newSet.delete(characterId);
       } else {
-        newPinned.add(characterId);
+        newSet.add(characterId);
       }
-      return newPinned;
+      return newSet;
     });
-  };
-
-  const handleQuickDialogue = (character: Character, text: string) => {
-    const event = new CustomEvent("insertDialogue", {
-      detail: {
-        characterName: character.name,
-        dialogue: text,
-      },
-    });
-    window.dispatchEvent(event);
   };
 
   return (
     <div className="character-panel">
+      {/* Header */}
       <div className="panel-header">
-        <h3>Characters</h3>
-        <div className="character-count">
-          {filteredCharacters.length} of {characters.length}
+        <div className="header-title">
+          <User size={18} />
+          <span>Characters</span>
         </div>
+        <button
+          className="add-btn"
+          onClick={() => {
+            /* TODO: Open character creation form */
+          }}
+          title="Add new character"
+        >
+          <Plus size={16} />
+        </button>
       </div>
 
       {/* Search */}
-      <div className="character-search">
-        <Search className="search-icon" size={16} />
+      <div className="search-container">
+        <Search size={16} className="search-icon" />
         <input
           type="text"
           placeholder="Search characters..."
           value={searchQuery}
           onChange={handleSearchChange}
+          className="search-input"
         />
       </div>
 
-      {/* Character List */}
-      <div className="character-list">
+      {/* Characters List */}
+      <div className="characters-list">
         {filteredCharacters.length === 0 ? (
-          <div className="no-characters">
-            <User size={48} color="#6e7681" />
+          <div className="empty-state">
+            <User size={48} className="empty-icon" />
             <p>No characters found</p>
-            <small>
-              Add characters from the sidebar to start inserting dialogue
-            </small>
           </div>
         ) : (
           filteredCharacters.map((character) => (
-            <div key={character.id} className="character-item">
-              {/* Character Header */}
-              <div className="character-header">
-                <span className="character-name">{character.name}</span>
-                <button
-                  className={`pin-button ${
-                    pinnedCharacters.has(character.id) ? "pinned" : ""
-                  }`}
-                  onClick={() => handleTogglePin(character.id)}
-                  title={
-                    pinnedCharacters.has(character.id) ? "Unpin" : "Pin to top"
-                  }
-                >
-                  {pinnedCharacters.has(character.id) ? (
-                    <Pin size={14} />
-                  ) : (
-                    <PinOff size={14} />
-                  )}
-                </button>
-              </div>
-
-              <p className="character-traits">{character.traits}</p>
-
-              {/* Dialogue Input */}
-              <div className="dialogue-input">
-                <textarea
-                  className="dialogue-text"
-                  placeholder={`What does ${character.name} say?`}
-                  value={dialogueInputs[character.id] || ""}
-                  onChange={(e) =>
-                    handleDialogueInputChange(character.id, e.target.value)
-                  }
-                  onKeyPress={(e) => handleKeyPress(e, character)}
-                  rows={2}
-                />
-                <div className="dialogue-actions">
-                  <button
-                    className="dialogue-add-btn"
-                    onClick={() => handleAddDialogue(character)}
-                    disabled={!dialogueInputs[character.id]?.trim()}
-                  >
-                    Add Dialogue
-                  </button>
-                  <button
-                    className="dialogue-quick-btn"
-                    onClick={() => handleQuickDialogue(character, "...")}
-                    title="Add pause"
-                  >
-                    ...
-                  </button>
-                  <button
-                    className="dialogue-quick-btn"
-                    onClick={() => handleQuickDialogue(character, "*thinks*")}
-                    title="Add thought"
-                  >
-                    💭
-                  </button>
-                </div>
-              </div>
-
-              {/* Character Details (collapsible) */}
-              <div className="character-details">
-                <p className="character-bio">{character.bio}</p>
-                {character.appearance && (
-                  <p className="character-appearance">
-                    <strong>Appearance:</strong> {character.appearance}
-                  </p>
-                )}
-              </div>
-            </div>
+            <CharacterItem
+              key={character.id}
+              character={character}
+              isPinned={pinnedCharacters.has(character.id)}
+              onTogglePin={() => handleTogglePin(character.id)}
+              onInsertDialogue={(text) => handleAddDialogue(character)}
+              onInsertCharacter={(context) =>
+                handleInsertCharacter(character, context)
+              }
+              onView={() => openCharacterTab(character.id)}
+              dialogueInput={dialogueInputs[character.id] || ""}
+              onDialogueInputChange={(value) =>
+                handleDialogueInputChange(character.id, value)
+              }
+              onKeyPress={(e) => handleKeyPress(e, character)}
+              usage={getCharacterUsage(character.id)}
+            />
           ))
         )}
+      </div>
+
+      {/* Panel Footer */}
+      <div className="panel-footer">
+        <div className="quick-stats">
+          <span>{filteredCharacters.length} characters</span>
+          <span>•</span>
+          <span>{pinnedCharacters.size} pinned</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ========================================
+// CHARACTER ITEM COMPONENT
+// ========================================
+
+interface CharacterItemProps {
+  character: Character;
+  isPinned: boolean;
+  onTogglePin: () => void;
+  onInsertDialogue: (text: string) => void;
+  onInsertCharacter: (context: CharacterContext) => void;
+  onView: () => void;
+  dialogueInput: string;
+  onDialogueInputChange: (value: string) => void;
+  onKeyPress: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  usage: any[];
+}
+
+const CharacterItem: React.FC<CharacterItemProps> = ({
+  character,
+  isPinned,
+  onTogglePin,
+  onInsertDialogue,
+  onInsertCharacter,
+  onView,
+  dialogueInput,
+  onDialogueInputChange,
+  onKeyPress,
+  usage,
+}) => {
+  const [showDialogueInput, setShowDialogueInput] = useState(false);
+
+  const getCharacterIcon = () => {
+    // You could customize this based on character traits or type
+    return "👤";
+  };
+
+  return (
+    <div className="character-item">
+      <div className="character-header">
+        <div className="character-info">
+          <span className="character-icon">{getCharacterIcon()}</span>
+          <div className="character-details">
+            <h4 className="character-name">{character.name}</h4>
+            {character.names?.dialogue &&
+              character.names.dialogue !== character.name && (
+                <span className="character-dialogue-name">
+                  "{character.names.dialogue}"
+                </span>
+              )}
+            {usage.length > 0 && (
+              <span className="usage-count">{usage.length} mentions</span>
+            )}
+          </div>
+        </div>
+
+        <div className="character-actions">
+          <button
+            className={`pin-btn ${isPinned ? "pinned" : ""}`}
+            onClick={onTogglePin}
+            title={isPinned ? "Unpin character" : "Pin character"}
+          >
+            {isPinned ? <Pin size={14} /> : <PinOff size={14} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Character Bio Preview */}
+      {character.bio && (
+        <div className="character-bio">
+          {character.bio.substring(0, 100)}
+          {character.bio.length > 100 && "..."}
+        </div>
+      )}
+
+      {/* Quick Insert Actions */}
+      <div className="character-quick-actions">
+        <button
+          className="quick-action-btn dialogue-btn"
+          onClick={() => setShowDialogueInput(!showDialogueInput)}
+          title="Add dialogue"
+        >
+          <MessageCircle size={14} />
+          Dialogue
+        </button>
+
+        <button
+          className="quick-action-btn narrative-btn"
+          onClick={() => onInsertCharacter("narrative")}
+          title="Insert in narrative"
+        >
+          <BookOpen size={14} />
+          Narrative
+        </button>
+
+        <button
+          className="quick-action-btn reference-btn"
+          onClick={() => onInsertCharacter("reference")}
+          title="Insert as reference"
+        >
+          <Eye size={14} />
+          Reference
+        </button>
+
+        <button
+          className="quick-action-btn view-btn"
+          onClick={onView}
+          title="View character details"
+        >
+          <Edit3 size={14} />
+          Edit
+        </button>
+      </div>
+
+      {/* Dialogue Input */}
+      {showDialogueInput && (
+        <div className="dialogue-input-container">
+          <textarea
+            value={dialogueInput}
+            onChange={(e) => onDialogueInputChange(e.target.value)}
+            onKeyDown={onKeyPress}
+            placeholder={`What does ${character.name} say?`}
+            className="dialogue-input"
+            rows={2}
+            autoFocus
+          />
+          <div className="dialogue-actions">
+            <button
+              className="dialogue-add-btn"
+              onClick={() => {
+                onInsertDialogue(dialogueInput);
+                setShowDialogueInput(false);
+              }}
+              disabled={!dialogueInput.trim()}
+            >
+              Add
+            </button>
+            <button
+              className="dialogue-cancel-btn"
+              onClick={() => setShowDialogueInput(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Dialogue Buttons */}
+      <div className="quick-dialogue-buttons">
+        <button
+          className="quick-dialogue-btn"
+          onClick={() => onInsertDialogue("...")}
+          title="Add pause"
+        >
+          ...
+        </button>
+        <button
+          className="quick-dialogue-btn"
+          onClick={() => onInsertDialogue("💭")}
+          title="Add thought"
+        >
+          💭
+        </button>
+        <button
+          className="quick-dialogue-btn"
+          onClick={() => onInsertDialogue("*sigh*")}
+          title="Add sigh"
+        >
+          *sigh*
+        </button>
       </div>
     </div>
   );

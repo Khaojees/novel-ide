@@ -17,6 +17,7 @@ export interface Character {
   relationships?: string[];
   tags?: string[];
   notes?: string;
+  color?: string;
 }
 
 export interface CharactersData {
@@ -48,12 +49,13 @@ export interface Idea {
 export interface Tab {
   id: string;
   name: string;
-  type: "chapter" | "idea" | "character";
+  type: "chapter" | "idea" | "character" | "location";
   path: string;
   content: string;
   modified?: boolean;
   // เพิ่ม metadata สำหรับ character tabs
   characterData?: Character;
+  title?: string;
 }
 
 // Character usage tracking

@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import Editor from "./components/Editor/Editor";
 import CharacterPanel from "./components/CharacterPanel/CharacterPanel";
 import { useProjectStore } from "./store/projectStore";
+import { ConfirmDialogProvider } from "./components/ConfirmDialogContext/ConfirmDialogContext";
 
 const App: React.FC = () => {
   const [isProjectLoaded, setIsProjectLoaded] = useState<boolean>(false);
@@ -246,73 +247,75 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="app-container">
-      {!isProjectLoaded ? (
-        <div className="welcome-screen">
-          <h1>Novel IDE</h1>
-          <p>AI-powered writing tool for novelists</p>
-          <div className="welcome-actions">
-            <button onClick={handleNewProject} className="btn-primary">
-              New Project
-            </button>
-            <button onClick={handleOpenProject} className="btn-secondary">
-              Open Project
-            </button>
-          </div>
-          <div className="welcome-shortcuts">
-            <p>Keyboard shortcuts:</p>
-            <ul>
-              <li>
-                <kbd>Ctrl+Shift+N</kbd> - New Project
-              </li>
-              <li>
-                <kbd>Ctrl+O</kbd> - Open Project
-              </li>
-              <li>
-                <kbd>Ctrl+S</kbd> - Save
-              </li>
-            </ul>
-          </div>
-          {projectPath && (
-            <div className="welcome-info">
-              <p
-                style={{
-                  color: "#f85149",
-                  fontSize: "0.9rem",
-                  marginTop: "1rem",
-                }}
-              >
-                Previous project path no longer exists: {projectPath}
-              </p>
-              <button
-                onClick={() => {
-                  setProjectPath("");
-                  window.location.reload(); // Force refresh to clear all state
-                }}
-                style={{
-                  marginTop: "0.5rem",
-                  padding: "0.5rem 1rem",
-                  background: "#21262d",
-                  border: "1px solid #f85149",
-                  borderRadius: "6px",
-                  color: "#f85149",
-                  cursor: "pointer",
-                  fontSize: "0.8rem",
-                }}
-              >
-                Clear Project Data
+    <ConfirmDialogProvider>
+      <div className="app-container">
+        {!isProjectLoaded ? (
+          <div className="welcome-screen">
+            <h1>Novel IDE</h1>
+            <p>AI-powered writing tool for novelists</p>
+            <div className="welcome-actions">
+              <button onClick={handleNewProject} className="btn-primary">
+                New Project
+              </button>
+              <button onClick={handleOpenProject} className="btn-secondary">
+                Open Project
               </button>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="app-layout">
-          <Sidebar />
-          <Editor />
-          <CharacterPanel />
-        </div>
-      )}
-    </div>
+            <div className="welcome-shortcuts">
+              <p>Keyboard shortcuts:</p>
+              <ul>
+                <li>
+                  <kbd>Ctrl+Shift+N</kbd> - New Project
+                </li>
+                <li>
+                  <kbd>Ctrl+O</kbd> - Open Project
+                </li>
+                <li>
+                  <kbd>Ctrl+S</kbd> - Save
+                </li>
+              </ul>
+            </div>
+            {projectPath && (
+              <div className="welcome-info">
+                <p
+                  style={{
+                    color: "#f85149",
+                    fontSize: "0.9rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  Previous project path no longer exists: {projectPath}
+                </p>
+                <button
+                  onClick={() => {
+                    setProjectPath("");
+                    window.location.reload(); // Force refresh to clear all state
+                  }}
+                  style={{
+                    marginTop: "0.5rem",
+                    padding: "0.5rem 1rem",
+                    background: "#21262d",
+                    border: "1px solid #f85149",
+                    borderRadius: "6px",
+                    color: "#f85149",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  Clear Project Data
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="app-layout">
+            <Sidebar />
+            <Editor />
+            <CharacterPanel />
+          </div>
+        )}
+      </div>
+    </ConfirmDialogProvider>
   );
 };
 

@@ -1,338 +1,310 @@
-// src/components/Editor/Editor.tsx
+// src/components/Editor/Editor.tsx - Updated for Structured Content
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Save, Users, BookOpen, Lightbulb } from "lucide-react";
+import { X, Users, BookOpen, Lightbulb, MapPin } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
-// Import CharacterEditor as type-safe
+import StructuredEditor from "./StructuredEditor";
 import CharacterEditor from "./CharacterEditor";
-import { Character, Tab } from "../../type";
+import { Character, Tab } from "../../types";
+import { Location, ContentNode } from "../../types/structured";
+import LocationEditor from "./LocationEditor";
+import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
 
 const Editor: React.FC = () => {
   const {
     openTabs,
     activeTab,
-    currentContent,
     closeTab,
-    updateContent,
-    saveCurrentFile,
     chapters,
-    ideas,
     characters,
-    openTab,
-    openCharacterTab,
+    locations,
     updateCharacter,
+    updateLocation,
+    updateChapterContent,
     deleteCharacter,
+    deleteLocation,
     getCharacterUsage,
+    getLocationUsage,
   } = useProjectStore();
 
-  const [localContent, setLocalContent] = useState(currentContent);
+  const [contentModified, setContentModified] = useState<
+    Record<string, boolean>
+  >({});
 
-  // Sync local content with store
-  useEffect(() => {
-    setLocalContent(currentContent);
-  }, [currentContent]);
+  const confirm = useConfirm();
 
-  // Helper function to determine tab type
-  const getTabType = (tab: any): "character" | "chapter" | "idea" => {
-    if (tab.type) {
-      return tab.type as "character" | "chapter" | "idea";
+  // Get current active tab data
+  const currentChapter = chapters.find((chapter) => chapter.id === activeTab);
+  const currentCharacter = characters.find((char) => char.id === activeTab);
+  const currentLocation = locations.find((loc) => loc.id === activeTab);
+
+  // Handle tab close
+  const handleCloseTab = useCallback(
+    async (tabId: string) => {
+      const isModified = contentModified[tabId];
+
+      if (isModified) {
+        const isConfirmed = await confirm({
+          title: "Alert",
+          message:
+            "You have unsaved changes. Are you sure you want to close this tab?",
+        });
+
+        if (isConfirmed) {
+          closeTab(tabId);
+          setContentModified((prev) => {
+            const newState = { ...prev };
+            delete newState[tabId];
+            return newState;
+          });
+        }
+      } else {
+        closeTab(tabId);
+      }
+    },
+    [closeTab, contentModified]
+  );
+
+  // Handle content change for chapters
+  const handleChapterContentChange = useCallback(
+    (nodes: ContentNode[]) => {
+      if (!currentChapter) return;
+
+      setContentModified((prev) => ({
+        ...prev,
+        [currentChapter.id]: true,
+      }));
+    },
+    [currentChapter]
+  );
+
+  // Handle save for chapters
+  const handleSaveChapter = useCallback(async () => {
+    if (!currentChapter) return;
+
+    try {
+      // The content is already updated in the chapter state through handleChapterContentChange
+      // We just need to trigger the save
+      await updateChapterContent(currentChapter.id, currentChapter.content);
+
+      setContentModified((prev) => ({
+        ...prev,
+        [currentChapter.id]: false,
+      }));
+    } catch (error) {
+      console.error("Failed to save chapter:", error);
+      alert("Failed to save chapter. Please try again.");
     }
+  }, [currentChapter, updateChapterContent]);
 
-    // Fallback: determine by checking if id exists in different arrays
-    const isCharacter = characters.some((char) => char.id === tab.id);
-    const isChapter = chapters.some((chapter) => chapter.id === tab.id);
-    const isIdea = ideas.some((idea) => idea.id === tab.id);
+  // Handle save for characters
+  const handleSaveCharacter = useCallback(
+    async (character: Character) => {
+      try {
+        await updateCharacter(character.id, character);
 
-    if (isCharacter) return "character";
-    if (isChapter) return "chapter";
-    if (isIdea) return "idea";
+        setContentModified((prev) => ({
+          ...prev,
+          [character.id]: false,
+        }));
+      } catch (error) {
+        console.error("Failed to save character:", error);
+        alert("Failed to save character. Please try again.");
+      }
+    },
+    [updateCharacter]
+  );
 
-    return "chapter"; // default
-  };
+  // Handle save for locations
+  const handleSaveLocation = useCallback(
+    async (location: Location) => {
+      try {
+        await updateLocation(location.id, location);
 
-  // Helper function to get tab icon
-  const getTabIcon = (type: "character" | "chapter" | "idea"): JSX.Element => {
-    switch (type) {
+        setContentModified((prev) => ({
+          ...prev,
+          [location.id]: false,
+        }));
+      } catch (error) {
+        console.error("Failed to save location:", error);
+        alert("Failed to save location. Please try again.");
+      }
+    },
+    [updateLocation]
+  );
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+
+        if (currentChapter) {
+          handleSaveChapter();
+        } else if (currentCharacter) {
+          handleSaveCharacter(currentCharacter);
+        } else if (currentLocation) {
+          handleSaveLocation(currentLocation);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    currentChapter,
+    currentCharacter,
+    currentLocation,
+    handleSaveChapter,
+    handleSaveCharacter,
+    handleSaveLocation,
+  ]);
+
+  // Get tab icon
+  const getTabIcon = (tab: Tab): JSX.Element => {
+    switch (tab.type) {
       case "character":
         return <Users size={14} />;
       case "chapter":
         return <BookOpen size={14} />;
       case "idea":
         return <Lightbulb size={14} />;
+      case "location":
+        return <MapPin size={14} />;
       default:
         return <BookOpen size={14} />;
     }
   };
 
-  // Helper function to get emoji icon for CSS ::before fallback
-  const getTabEmoji = (type: "character" | "chapter" | "idea"): string => {
-    switch (type) {
+  // Get tab color
+  const getTabColor = (tab: Tab): string => {
+    switch (tab.type) {
       case "character":
-        return "👤";
+        return "#10b981";
       case "chapter":
-        return "📖";
+        return "#3b82f6";
       case "idea":
-        return "💡";
+        return "#f59e0b";
+      case "location":
+        return "#ef4444";
       default:
-        return "📄";
+        return "#6b7280";
     }
   };
 
-  const handleTabClick = (tabId: string) => {
-    const tab = openTabs.find((t) => t.id === tabId);
-    if (tab) {
-      // Find the original item and open it
-      const chapter = chapters.find((c) => c.id === tabId);
-      const idea = ideas.find((i) => i.id === tabId);
-      const character = characters.find((char) => char.id === tabId);
-
-      if (chapter) {
-        openTab(chapter);
-      } else if (idea) {
-        openTab(idea);
-      } else if (character) {
-        openCharacterTab(character);
-      }
-    }
-  };
-
-  const handleCloseTab = (tabId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    closeTab(tabId);
-  };
-
-  const handleContentChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    const newContent = event.target.value;
-    setLocalContent(newContent);
-    updateContent(newContent);
-  };
-
-  const handleSave = useCallback(async () => {
-    try {
-      await saveCurrentFile();
-    } catch (error) {
-      console.error("Failed to save:", error);
-    }
-  }, [saveCurrentFile]);
-
-  const activeTabData = openTabs.find((tab) => tab.id === activeTab);
-
-  // Type guard for character tab
-  const isCharacterTab = (
-    tab: any
-  ): tab is Tab & { type: "character"; characterData: Character } => {
-    return tab?.type === "character" && tab?.characterData;
-  };
-
-  // Listen for dialogue insertion events
-  useEffect(() => {
-    const handleDialogueInsertion = (event: CustomEvent) => {
-      const { characterName, dialogue } = event.detail;
-
-      if (activeTabData) {
-        // Simple dialogue insertion - just append to current content
-        const dialogueText = `\n\n${characterName}: "${dialogue}"\n\n`;
-        const newContent = localContent + dialogueText;
-        setLocalContent(newContent);
-        updateContent(newContent);
-      }
-    };
-
-    window.addEventListener(
-      "insertDialogue",
-      handleDialogueInsertion as EventListener
+  if (openTabs.length === 0) {
+    return (
+      <div className="editor-empty">
+        <div className="empty-state">
+          <BookOpen size={64} className="empty-icon" />
+          <h2>No files open</h2>
+          <p>
+            Select a chapter, character, or location from the sidebar to start
+            editing.
+          </p>
+        </div>
+      </div>
     );
-    return () => {
-      window.removeEventListener(
-        "insertDialogue",
-        handleDialogueInsertion as EventListener
-      );
-    };
-  }, [activeTabData, localContent, updateContent]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        if (event.key === "s") {
-          event.preventDefault();
-          handleSave();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSave]);
+  }
 
   return (
-    <div className="editor-container">
-      {/* Color-Coded Tabs */}
-      <div className="editor-tabs">
-        {openTabs.map((tab) => {
-          const tabType = getTabType(tab);
-          const isActive = activeTab === tab.id;
-          const isModified = tab.modified;
-
-          return (
-            <div
-              key={tab.id}
-              className={`editor-tab ${tabType} ${isActive ? "active" : ""} ${
-                isModified ? "modified" : ""
-              }`}
-              onClick={() => handleTabClick(tab.id)}
-              title={`${tab.name} (${tabType})`}
-              data-emoji={getTabEmoji(tabType)} // For CSS ::before if needed
-            >
-              {/* Icon */}
-              <span className="tab-icon">{getTabIcon(tabType)}</span>
-
-              {/* Tab name */}
-              <span className="tab-name">{tab.name}</span>
-
-              {/* Modified indicator */}
-              {isModified && (
-                <span
-                  className="modified-indicator"
-                  title="File has unsaved changes"
-                >
-                  ●
-                </span>
+    <div className="editor">
+      {/* Tab Bar */}
+      <div className="tab-bar">
+        {openTabs.map((tab) => (
+          <div
+            key={tab.id}
+            className={`tab ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => {
+              const { setActiveTab } = useProjectStore.getState();
+              setActiveTab(tab.id);
+            }}
+            style={{
+              borderTopColor:
+                activeTab === tab.id ? getTabColor(tab) : "transparent",
+            }}
+          >
+            <div className="tab-content">
+              <div className="tab-icon" style={{ color: getTabColor(tab) }}>
+                {getTabIcon(tab)}
+              </div>
+              <span className="tab-title">{tab.title}</span>
+              {contentModified[tab.id] && (
+                <span className="modified-indicator">●</span>
               )}
-
-              {/* Close button */}
-              <button
-                className="tab-close"
-                onClick={(e) => handleCloseTab(tab.id, e)}
-                title="Close tab"
-              >
-                <X size={12} />
-              </button>
             </div>
-          );
-        })}
+            <button
+              className="tab-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCloseTab(tab.id);
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Editor Content */}
       <div className="editor-content">
-        {activeTabData ? (
-          isCharacterTab(activeTabData) ? (
-            /* Character Editor */
-            <CharacterEditor
-              character={activeTabData.characterData}
-              onSave={async (character) => {
-                await updateCharacter(character.id, character);
-              }}
-              onCancel={() => closeTab(activeTabData.id)}
-              onDelete={deleteCharacter}
-              usage={getCharacterUsage(activeTabData.id)}
-              isModified={activeTabData.modified || false}
-              onModifiedChange={(modified) => {
-                // Update tab modified state
-                const updatedTabs = openTabs.map((tab) =>
-                  tab.id === activeTabData.id ? { ...tab, modified } : tab
-                );
-                // This would need to be added to the store, for now just log
-                console.log("Character modified:", modified);
-              }}
-            />
-          ) : (
-            /* Regular Text Editor */
-            <div className="editor-workspace">
-              {/* Toolbar with save button and file info */}
-              <div className="editor-toolbar">
-                <div className="toolbar-left">
-                  <button
-                    className="toolbar-button"
-                    onClick={handleSave}
-                    disabled={!activeTabData.modified}
-                    title={
-                      activeTabData.modified
-                        ? "Save file (Ctrl+S)"
-                        : "No changes to save"
-                    }
-                  >
-                    <Save size={16} />
-                    Save
-                  </button>
+        {currentChapter && (
+          <StructuredEditor
+            key={currentChapter.id}
+            chapter={currentChapter}
+            characters={characters}
+            locations={locations}
+            onContentChange={handleChapterContentChange}
+            onSave={handleSaveChapter}
+            isModified={contentModified[currentChapter.id] || false}
+          />
+        )}
 
-                  {/* File type indicator */}
-                  <span
-                    className={`file-type-badge ${getTabType(
-                      activeTabData
-                    )}-theme`}
-                  >
-                    {getTabIcon(getTabType(activeTabData))}
-                    {getTabType(activeTabData).charAt(0).toUpperCase() +
-                      getTabType(activeTabData).slice(1)}
-                  </span>
-                </div>
+        {currentCharacter && (
+          <CharacterEditor
+            key={currentCharacter.id}
+            character={currentCharacter}
+            onSave={handleSaveCharacter}
+            onCancel={() => closeTab(currentCharacter.id)}
+            onDelete={async (characterId: string) => {
+              const success = await deleteCharacter(characterId);
+              if (success) {
+                closeTab(characterId);
+              }
+              return success;
+            }}
+            getCharacterUsage={getCharacterUsage}
+            isModified={contentModified[currentCharacter.id] || false}
+            onContentChange={() => {
+              setContentModified((prev) => ({
+                ...prev,
+                [currentCharacter.id]: true,
+              }));
+            }}
+          />
+        )}
 
-                <div className="editor-info">
-                  <span className="word-count">
-                    Words:{" "}
-                    {
-                      localContent.split(/\s+/).filter((w) => w.length > 0)
-                        .length
-                    }
-                  </span>
-                  <span className="char-count">
-                    Characters: {localContent.length}
-                  </span>
-                  {activeTabData.modified && (
-                    <span className="unsaved-indicator">● Unsaved changes</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Text Editor */}
-              <textarea
-                className="editor-textarea"
-                value={localContent}
-                onChange={handleContentChange}
-                placeholder={`Start writing your ${getTabType(
-                  activeTabData
-                )}...`}
-                autoFocus
-              />
-            </div>
-          )
-        ) : (
-          /* Empty state */
-          <div className="editor-placeholder">
-            <h3>Welcome to Novel IDE</h3>
-            <p>
-              Select a chapter, idea, or character from the sidebar to start
-              working.
-            </p>
-
-            <div className="editor-tips">
-              <h4>Quick Tips:</h4>
-              <ul>
-                <li>
-                  <span className="tip-icon">👤</span>
-                  Click characters to edit their profiles
-                </li>
-                <li>
-                  <span className="tip-icon">📖</span>
-                  Create chapters to organize your story
-                </li>
-                <li>
-                  <span className="tip-icon">💡</span>
-                  Use ideas to capture plot points and world-building
-                </li>
-                <li>
-                  <span className="tip-icon">⌨️</span>
-                  Press Ctrl+S to save your work
-                </li>
-                <li>
-                  <span className="tip-icon">🎯</span>
-                  Use the Character Panel to quickly insert dialogue
-                </li>
-              </ul>
-            </div>
-          </div>
+        {currentLocation && (
+          <LocationEditor
+            key={currentLocation.id}
+            location={currentLocation}
+            onSave={handleSaveLocation}
+            onCancel={() => closeTab(currentLocation.id)}
+            onDelete={async (locationId: string) => {
+              const success = await deleteLocation(locationId);
+              if (success) {
+                closeTab(locationId);
+              }
+              return success;
+            }}
+            getLocationUsage={getLocationUsage}
+            isModified={contentModified[currentLocation.id] || false}
+            onContentChange={() => {
+              setContentModified((prev) => ({
+                ...prev,
+                [currentLocation.id]: true,
+              }));
+            }}
+          />
         )}
       </div>
     </div>
