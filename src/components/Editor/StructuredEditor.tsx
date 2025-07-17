@@ -299,29 +299,7 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     <div className="structured-editor">
       {/* Toolbar */}
       <div className="editor-toolbar">
-        <div className="toolbar-left">
-          <button
-            className="toolbar-btn"
-            onClick={() => insertCharacterTag("", "dialogue")}
-            title="Add dialogue"
-          >
-            💬 Dialogue
-          </button>
-          <button
-            className="toolbar-btn"
-            onClick={() => insertCharacterTag("", "narrative")}
-            title="Add character"
-          >
-            👤 Character
-          </button>
-          <button
-            className="toolbar-btn"
-            onClick={() => insertLocationTag("")}
-            title="Add location"
-          >
-            📍 Location
-          </button>
-        </div>
+        <div className="toolbar-left"></div>
 
         <div className="toolbar-right">
           <span className="word-count">
