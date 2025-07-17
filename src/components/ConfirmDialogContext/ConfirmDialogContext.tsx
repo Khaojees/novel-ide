@@ -1,4 +1,4 @@
-// ConfirmDialogContext.tsx
+// src/components/ConfirmDialogContext/ConfirmDialogContext.tsx - Fixed CSS
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import ReactDOM from "react-dom";
 
@@ -52,22 +52,103 @@ export const ConfirmDialogProvider = ({
       {children}
       {dialogState &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
-              <h2 className="text-lg font-bold mb-4">
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                padding: "24px",
+                maxWidth: "400px",
+                width: "90%",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              <h2
+                style={{
+                  color: "var(--text-primary)",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  margin: "0 0 12px 0",
+                }}
+              >
                 {dialogState.options.title || "Confirm"}
               </h2>
-              <p className="mb-6">{dialogState.options.message}</p>
-              <div className="flex justify-end gap-2">
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "14px",
+                  lineHeight: "1.5",
+                  margin: "0 0 20px 0",
+                }}
+              >
+                {dialogState.options.message}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "flex-end",
+                }}
+              >
                 <button
                   onClick={() => handleClose(false)}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-tertiary)",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    minWidth: "80px",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "var(--border-color)";
+                    e.currentTarget.style.color = "var(--text-primary)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "var(--bg-tertiary)";
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                  }}
                 >
                   {dialogState.options.cancelText || "Cancel"}
                 </button>
                 <button
                   onClick={() => handleClose(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "none",
+                    backgroundColor: "#dc2626",
+                    color: "white",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    minWidth: "80px",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = "#b91c1c";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "#dc2626";
+                  }}
                 >
                   {dialogState.options.confirmText || "Confirm"}
                 </button>

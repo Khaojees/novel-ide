@@ -1,5 +1,5 @@
 // src/components/Editor/Editor.tsx - Complete Fixed Version
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { X, Users, BookOpen, Lightbulb, MapPin } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import StructuredEditor from "./StructuredEditor";
@@ -30,7 +30,13 @@ const Editor: React.FC = () => {
     Record<string, boolean>
   >({});
 
+  const [latestChapterContent, setLatestChapterContent] = useState<
+    Record<string, ContentNode[]>
+  >({});
+
   const confirm = useConfirm();
+
+  const originalContentRef = useRef<string>("");
 
   // Get current active tab data
   const currentChapter = chapters.find((chapter) => chapter.id === activeTab);
@@ -50,7 +56,6 @@ const Editor: React.FC = () => {
   const handleCloseTab = useCallback(
     async (tabId: string) => {
       const isModified = contentModified[tabId];
-
       if (isModified) {
         const isConfirmed = await confirm({
           title: "Unsaved Changes",
@@ -71,10 +76,22 @@ const Editor: React.FC = () => {
     [closeTab, contentModified, confirm]
   );
 
+  useEffect(() => {
+    if (currentChapter) {
+      originalContentRef.current = JSON.stringify(currentChapter.content);
+    }
+  }, [currentChapter?.id, currentChapter]);
+
   // Handle content change for chapters
   const handleChapterContentChange = useCallback(
     (nodes: ContentNode[]) => {
       if (!currentChapter) return;
+
+      // เก็บ nodes ล่าสุด
+      setLatestChapterContent((prev) => ({
+        ...prev,
+        [currentChapter.id]: nodes,
+      }));
 
       setContentModified((prev) => ({
         ...prev,
@@ -89,7 +106,10 @@ const Editor: React.FC = () => {
     if (!currentChapter || !updateChapterContent) return;
 
     try {
-      await updateChapterContent(currentChapter.id, currentChapter.content);
+      // ใช้ content ล่าสุดจาก state แทน
+      const nodesToSave =
+        latestChapterContent[currentChapter.id] || currentChapter.content;
+      await updateChapterContent(currentChapter.id, nodesToSave);
 
       setContentModified((prev) => ({
         ...prev,
@@ -101,7 +121,7 @@ const Editor: React.FC = () => {
       console.error("Failed to save chapter:", error);
       alert("Failed to save chapter. Please try again.");
     }
-  }, [currentChapter, updateChapterContent]);
+  }, [currentChapter, updateChapterContent, latestChapterContent]);
 
   // Handle save for characters
   const handleSaveCharacter = useCallback(
