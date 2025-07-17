@@ -1,22 +1,27 @@
-// src/components/Sidebar/Sidebar.tsx
+// src/components/Sidebar/Sidebar.tsx - Updated for type safety
 import React, { useState } from "react";
-import { Plus, Users, BookOpen, Lightbulb } from "lucide-react";
+import { Plus, Users, BookOpen, Lightbulb, MapPin } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
-import { Character, Chapter, Idea } from "../../types";
+import { Character, Idea } from "../../types";
+import { StructuredChapter, Location } from "../../types/structured";
 import { CharacterModal } from "./components/CharacterModal";
 import { ChapterModal } from "./components/ChapterModal";
 import { IdeaModal } from "./components/IdeaModal";
+import LocationModal from "./components/LocationModal";
 
 const Sidebar: React.FC = () => {
   const {
     characters,
     chapters,
+    locations,
     ideas,
     openTab,
     openCharacterTab,
+    openLocationTab,
     addCharacter,
     addChapter,
     addIdea,
+    addLocation,
     projectPath,
   } = useProjectStore();
 
@@ -24,17 +29,32 @@ const Sidebar: React.FC = () => {
   const [showCharacterModal, setShowCharacterModal] = useState(false);
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
-  const handleChapterOrIdeaClick = (item: Chapter | Idea) => {
-    console.log("Opening:", item);
-    openTab(item);
+  // Handle clicks - type-safe
+  const handleChapterClick = (chapter: StructuredChapter) => {
+    console.log("Opening chapter:", chapter);
+    openTab(chapter);
+  };
+
+  const handleIdeaClick = (idea: Idea) => {
+    console.log("Opening idea:", idea);
+    openTab(idea);
   };
 
   const handleCharacterClick = (character: Character) => {
     console.log("Opening character:", character);
-    openCharacterTab(character);
+    openCharacterTab(character); // รับ Character object
   };
 
+  const handleLocationClick = (location: Location) => {
+    console.log("Opening location:", location);
+    if (openLocationTab) {
+      openLocationTab(location.id); // รับ location ID
+    }
+  };
+
+  // Add handlers
   const handleAddCharacter = () => {
     setShowCharacterModal(true);
   };
@@ -47,51 +67,11 @@ const Sidebar: React.FC = () => {
     setShowIdeaModal(true);
   };
 
-  // Generic section renderer for chapters and ideas
-  const renderChapterOrIdeaSection = (
-    title: string,
-    items: (Chapter | Idea)[],
-    icon: React.ReactNode,
-    onAdd: () => void,
-    sectionType: "chapters" | "ideas"
-  ) => (
-    <div className={`sidebar-section ${sectionType}`}>
-      <div className="section-header">
-        <div className="section-title">
-          {icon}
-          <h3>{title}</h3>
-        </div>
-        <button
-          className="add-icon-btn"
-          onClick={onAdd}
-          title={`Add ${title.slice(0, -1)}`}
-        >
-          <Plus size={14} />
-        </button>
-      </div>
+  const handleAddLocation = () => {
+    setShowLocationModal(true);
+  };
 
-      <div className="section-items">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="sidebar-item"
-            onClick={() => handleChapterOrIdeaClick(item)}
-          >
-            <span className="item-name">
-              {"title" in item ? item.title : item.filename}
-            </span>
-          </div>
-        ))}
-
-        <button className="add-button" onClick={onAdd}>
-          <Plus size={14} />
-          <span>Add {title.slice(0, -1)}</span>
-        </button>
-      </div>
-    </div>
-  );
-
-  // Specific character section renderer
+  // Character section renderer
   const renderCharacterSection = () => (
     <div className="sidebar-section characters">
       <div className="section-header">
@@ -114,35 +94,162 @@ const Sidebar: React.FC = () => {
             key={character.id}
             className="sidebar-item"
             onClick={() => handleCharacterClick(character)}
-            title={
-              character.traits || character.bio || "Click to edit character"
-            }
           >
             <span className="item-name">{character.name}</span>
             {!character.active && (
-              <span className="inactive-indicator" title="Inactive character">
-                ●
-              </span>
+              <span className="inactive-indicator">inactive</span>
             )}
           </div>
         ))}
 
+        {characters.length === 0 && (
+          <div className="empty-state">No characters yet</div>
+        )}
+
         <button className="add-button" onClick={handleAddCharacter}>
           <Plus size={14} />
-          <span>Add Character</span>
+          Add Character
         </button>
       </div>
     </div>
   );
 
-  // Show loading state if no project is loaded
+  // Location section renderer
+  const renderLocationSection = () => (
+    <div className="sidebar-section locations">
+      <div className="section-header">
+        <div className="section-title">
+          <MapPin size={16} />
+          <h3>Locations</h3>
+        </div>
+        <button
+          className="add-icon-btn"
+          onClick={handleAddLocation}
+          title="Add Location"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      <div className="section-items">
+        {locations?.map((location) => (
+          <div
+            key={location.id}
+            className="sidebar-item"
+            onClick={() => handleLocationClick(location)}
+          >
+            <span className="item-name">{location.name}</span>
+            {location.type && (
+              <span className="location-type">{location.type}</span>
+            )}
+          </div>
+        ))}
+
+        {(!locations || locations.length === 0) && (
+          <div className="empty-state">No locations yet</div>
+        )}
+
+        <button className="add-button" onClick={handleAddLocation}>
+          <Plus size={14} />
+          Add Location
+        </button>
+      </div>
+    </div>
+  );
+
+  // Chapter section renderer - type-safe for StructuredChapter
+  const renderChapterSection = () => (
+    <div className="sidebar-section chapters">
+      <div className="section-header">
+        <div className="section-title">
+          <BookOpen size={16} />
+          <h3>Chapters</h3>
+        </div>
+        <button
+          className="add-icon-btn"
+          onClick={handleAddChapter}
+          title="Add Chapter"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      <div className="section-items">
+        {chapters.map((chapter) => (
+          <div
+            key={chapter.id}
+            className="sidebar-item"
+            onClick={() => handleChapterClick(chapter)}
+          >
+            <span className="item-name">
+              {`${chapter.metadata.order.toString().padStart(2, "0")}. ${
+                chapter.metadata.title
+              }`}
+            </span>
+            {chapter.metadata.wordCount && (
+              <span className="word-count">
+                {chapter.metadata.wordCount} words
+              </span>
+            )}
+          </div>
+        ))}
+
+        {chapters.length === 0 && (
+          <div className="empty-state">No chapters yet</div>
+        )}
+
+        <button className="add-button" onClick={handleAddChapter}>
+          <Plus size={14} />
+          Add Chapter
+        </button>
+      </div>
+    </div>
+  );
+
+  // Idea section renderer - type-safe for Idea
+  const renderIdeaSection = () => (
+    <div className="sidebar-section ideas">
+      <div className="section-header">
+        <div className="section-title">
+          <Lightbulb size={16} />
+          <h3>Ideas</h3>
+        </div>
+        <button
+          className="add-icon-btn"
+          onClick={handleAddIdea}
+          title="Add Idea"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      <div className="section-items">
+        {ideas.map((idea) => (
+          <div
+            key={idea.id}
+            className="sidebar-item"
+            onClick={() => handleIdeaClick(idea)}
+          >
+            <span className="item-name">
+              {idea.filename.replace(".md", "")}
+            </span>
+          </div>
+        ))}
+
+        {ideas.length === 0 && <div className="empty-state">No ideas yet</div>}
+
+        <button className="add-button" onClick={handleAddIdea}>
+          <Plus size={14} />
+          Add Idea
+        </button>
+      </div>
+    </div>
+  );
+
   if (!projectPath) {
     return (
       <div className="sidebar">
-        <div className="sidebar-header">
-          <h2>Project Explorer</h2>
-        </div>
-        <div className="sidebar-placeholder">
+        <div className="empty-project">
           <p>No project loaded</p>
         </div>
       </div>
@@ -151,35 +258,27 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="sidebar">
-      <div className="sidebar-header">
-        <h2>Project Explorer</h2>
+      {/* Project Header */}
+      <div className="project-header">
         <div className="project-info">
+          <h2>Project</h2>
           <span className="project-path">{projectPath.split("/").pop()}</span>
         </div>
       </div>
 
-      {/* Characters Section - Type-safe */}
+      {/* Characters Section */}
       {renderCharacterSection()}
 
-      {/* Chapters Section - Type-safe */}
-      {renderChapterOrIdeaSection(
-        "Chapters",
-        chapters,
-        <BookOpen size={16} />,
-        handleAddChapter,
-        "chapters"
-      )}
+      {/* Locations Section */}
+      {renderLocationSection()}
 
-      {/* Ideas Section - Type-safe */}
-      {renderChapterOrIdeaSection(
-        "Ideas",
-        ideas,
-        <Lightbulb size={16} />,
-        handleAddIdea,
-        "ideas"
-      )}
+      {/* Chapters Section */}
+      {renderChapterSection()}
 
-      {/* Character Modal */}
+      {/* Ideas Section */}
+      {renderIdeaSection()}
+
+      {/* Modals */}
       {showCharacterModal && (
         <CharacterModal
           onClose={() => setShowCharacterModal(false)}
@@ -195,7 +294,6 @@ const Sidebar: React.FC = () => {
         />
       )}
 
-      {/* Chapter Modal */}
       {showChapterModal && (
         <ChapterModal
           onClose={() => setShowChapterModal(false)}
@@ -211,7 +309,6 @@ const Sidebar: React.FC = () => {
         />
       )}
 
-      {/* Idea Modal */}
       {showIdeaModal && (
         <IdeaModal
           onClose={() => setShowIdeaModal(false)}
@@ -222,6 +319,21 @@ const Sidebar: React.FC = () => {
             } catch (error) {
               console.error("Failed to add idea:", error);
               alert("Failed to add idea. Please try again.");
+            }
+          }}
+        />
+      )}
+
+      {showLocationModal && addLocation && (
+        <LocationModal
+          onClose={() => setShowLocationModal(false)}
+          onSave={async (locationData: Omit<Location, "id">) => {
+            try {
+              await addLocation(locationData);
+              setShowLocationModal(false);
+            } catch (error) {
+              console.error("Failed to add location:", error);
+              alert("Failed to add location. Please try again.");
             }
           }}
         />

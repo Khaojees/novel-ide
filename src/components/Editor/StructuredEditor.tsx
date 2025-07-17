@@ -18,7 +18,6 @@ import {
   updateNode,
   renderNodesToText,
 } from "../../utils/contentUtils";
-import "./StructuredEditor.css";
 import { Character } from "../../types";
 
 interface StructuredEditorProps {

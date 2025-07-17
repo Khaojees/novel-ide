@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Editor from "./components/Editor/Editor";
@@ -60,43 +60,7 @@ const App: React.FC = () => {
     validateProjectPath();
   }, [projectPath, loadProject, setProjectPath]);
 
-  // Setup menu handlers
-  useEffect(() => {
-    if (window.electronAPI) {
-      // Setup menu event listeners
-      window.electronAPI.onMenuNewProject(() => {
-        console.log("Menu: New Project");
-        handleNewProject();
-      });
-
-      window.electronAPI.onMenuOpenProject(() => {
-        console.log("Menu: Open Project");
-        handleOpenProject();
-      });
-
-      window.electronAPI.onMenuSave(() => {
-        console.log("Menu: Save");
-        handleSave();
-      });
-
-      window.electronAPI.onMenuCloseProject(() => {
-        console.log("Menu: Close Project");
-        handleCloseProject();
-      });
-
-      // Cleanup listeners on unmount
-      return () => {
-        if (window.electronAPI) {
-          window.electronAPI.removeAllListeners("menu-new-project");
-          window.electronAPI.removeAllListeners("menu-open-project");
-          window.electronAPI.removeAllListeners("menu-close-project");
-          window.electronAPI.removeAllListeners("menu-save");
-        }
-      };
-    }
-  }, []);
-
-  const handleNewProject = async (): Promise<void> => {
+  const handleNewProject = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
 
@@ -122,9 +86,9 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [createNewProject]);
 
-  const handleOpenProject = async (): Promise<void> => {
+  const handleOpenProject = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
 
@@ -183,9 +147,9 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [createNewProject, loadProject]);
 
-  const handleCloseProject = () => {
+  const handleCloseProject = useCallback(() => {
     const confirm = window.confirm(
       "Are you sure you want to close the current project? Any unsaved changes will be lost."
     );
@@ -193,9 +157,9 @@ const App: React.FC = () => {
       clearProject();
       setIsProjectLoaded(false);
     }
-  };
+  }, [clearProject]);
 
-  const handleSave = async (): Promise<void> => {
+  const handleSave = useCallback(async (): Promise<void> => {
     if (!isProjectLoaded) return;
 
     try {
@@ -205,7 +169,43 @@ const App: React.FC = () => {
       console.error("Error saving project:", error);
       alert("Failed to save project. Please try again.");
     }
-  };
+  }, [isProjectLoaded, saveCurrentFile]);
+
+  // Setup menu handlers
+  useEffect(() => {
+    if (window.electronAPI) {
+      // Setup menu event listeners
+      window.electronAPI.onMenuNewProject(() => {
+        console.log("Menu: New Project");
+        handleNewProject();
+      });
+
+      window.electronAPI.onMenuOpenProject(() => {
+        console.log("Menu: Open Project");
+        handleOpenProject();
+      });
+
+      window.electronAPI.onMenuSave(() => {
+        console.log("Menu: Save");
+        handleSave();
+      });
+
+      window.electronAPI.onMenuCloseProject(() => {
+        console.log("Menu: Close Project");
+        handleCloseProject();
+      });
+
+      // Cleanup listeners on unmount
+      return () => {
+        if (window.electronAPI) {
+          window.electronAPI.removeAllListeners("menu-new-project");
+          window.electronAPI.removeAllListeners("menu-open-project");
+          window.electronAPI.removeAllListeners("menu-close-project");
+          window.electronAPI.removeAllListeners("menu-save");
+        }
+      };
+    }
+  }, [handleNewProject, handleOpenProject, handleSave, handleCloseProject]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -232,7 +232,7 @@ const App: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProjectLoaded]);
+  }, [isProjectLoaded, handleNewProject, handleOpenProject, handleSave]);
 
   // Show loading state
   if (isLoading) {

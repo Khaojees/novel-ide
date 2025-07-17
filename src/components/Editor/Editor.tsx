@@ -1,4 +1,4 @@
-// src/components/Editor/Editor.tsx - Updated for Structured Content
+// src/components/Editor/Editor.tsx - Complete Fixed Version
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Users, BookOpen, Lightbulb, MapPin } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
@@ -37,6 +37,15 @@ const Editor: React.FC = () => {
   const currentCharacter = characters.find((char) => char.id === activeTab);
   const currentLocation = locations.find((loc) => loc.id === activeTab);
 
+  // Set active tab - use direct store access
+  const setActiveTab = useCallback((tabId: string) => {
+    // Direct store update since setActiveTab might not be exposed
+    useProjectStore.setState((state) => ({
+      ...state,
+      activeTab: tabId,
+    }));
+  }, []);
+
   // Handle tab close
   const handleCloseTab = useCallback(
     async (tabId: string) => {
@@ -44,24 +53,22 @@ const Editor: React.FC = () => {
 
       if (isModified) {
         const isConfirmed = await confirm({
-          title: "Alert",
+          title: "Unsaved Changes",
           message:
             "You have unsaved changes. Are you sure you want to close this tab?",
         });
 
-        if (isConfirmed) {
-          closeTab(tabId);
-          setContentModified((prev) => {
-            const newState = { ...prev };
-            delete newState[tabId];
-            return newState;
-          });
-        }
-      } else {
-        closeTab(tabId);
+        if (!isConfirmed) return;
       }
+
+      closeTab(tabId);
+      setContentModified((prev) => {
+        const newState = { ...prev };
+        delete newState[tabId];
+        return newState;
+      });
     },
-    [closeTab, contentModified]
+    [closeTab, contentModified, confirm]
   );
 
   // Handle content change for chapters
@@ -79,17 +86,17 @@ const Editor: React.FC = () => {
 
   // Handle save for chapters
   const handleSaveChapter = useCallback(async () => {
-    if (!currentChapter) return;
+    if (!currentChapter || !updateChapterContent) return;
 
     try {
-      // The content is already updated in the chapter state through handleChapterContentChange
-      // We just need to trigger the save
       await updateChapterContent(currentChapter.id, currentChapter.content);
 
       setContentModified((prev) => ({
         ...prev,
         [currentChapter.id]: false,
       }));
+
+      console.log("Chapter saved successfully!");
     } catch (error) {
       console.error("Failed to save chapter:", error);
       alert("Failed to save chapter. Please try again.");
@@ -106,6 +113,8 @@ const Editor: React.FC = () => {
           ...prev,
           [character.id]: false,
         }));
+
+        console.log("Character saved successfully!");
       } catch (error) {
         console.error("Failed to save character:", error);
         alert("Failed to save character. Please try again.");
@@ -117,6 +126,8 @@ const Editor: React.FC = () => {
   // Handle save for locations
   const handleSaveLocation = useCallback(
     async (location: Location) => {
+      if (!updateLocation) return;
+
       try {
         await updateLocation(location.id, location);
 
@@ -124,6 +135,8 @@ const Editor: React.FC = () => {
           ...prev,
           [location.id]: false,
         }));
+
+        console.log("Location saved successfully!");
       } catch (error) {
         console.error("Failed to save location:", error);
         alert("Failed to save location. Please try again.");
@@ -146,6 +159,12 @@ const Editor: React.FC = () => {
           handleSaveLocation(currentLocation);
         }
       }
+
+      // Close tab with Ctrl+W
+      if (e.ctrlKey && e.key === "w" && activeTab) {
+        e.preventDefault();
+        handleCloseTab(activeTab);
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -154,9 +173,11 @@ const Editor: React.FC = () => {
     currentChapter,
     currentCharacter,
     currentLocation,
+    activeTab,
     handleSaveChapter,
     handleSaveCharacter,
     handleSaveLocation,
+    handleCloseTab,
   ]);
 
   // Get tab icon
@@ -179,28 +200,36 @@ const Editor: React.FC = () => {
   const getTabColor = (tab: Tab): string => {
     switch (tab.type) {
       case "character":
-        return "#10b981";
+        return "var(--character-color, #10b981)";
       case "chapter":
-        return "#3b82f6";
+        return "var(--chapter-color, #3b82f6)";
       case "idea":
-        return "#f59e0b";
+        return "var(--idea-color, #f59e0b)";
       case "location":
-        return "#ef4444";
+        return "var(--location-color, #ef4444)";
       default:
-        return "#6b7280";
+        return "var(--text-secondary, #6b7280)";
     }
   };
 
+  // Get tab title
+  const getTabTitle = (tab: Tab): string => {
+    return tab.title || tab.name || "Untitled";
+  };
+
+  // Show empty state if no tabs
   if (openTabs.length === 0) {
     return (
-      <div className="editor-empty">
-        <div className="empty-state">
-          <BookOpen size={64} className="empty-icon" />
-          <h2>No files open</h2>
-          <p>
-            Select a chapter, character, or location from the sidebar to start
-            editing.
-          </p>
+      <div className="editor">
+        <div className="editor-empty">
+          <div className="empty-state">
+            <BookOpen size={64} className="empty-icon" />
+            <h2>No files open</h2>
+            <p>
+              Select a chapter, character, location, or idea from the sidebar to
+              start editing.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -214,10 +243,7 @@ const Editor: React.FC = () => {
           <div
             key={tab.id}
             className={`tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => {
-              const { setActiveTab } = useProjectStore.getState();
-              setActiveTab(tab.id);
-            }}
+            onClick={() => setActiveTab(tab.id)}
             style={{
               borderTopColor:
                 activeTab === tab.id ? getTabColor(tab) : "transparent",
@@ -227,7 +253,7 @@ const Editor: React.FC = () => {
               <div className="tab-icon" style={{ color: getTabColor(tab) }}>
                 {getTabIcon(tab)}
               </div>
-              <span className="tab-title">{tab.title}</span>
+              <span className="tab-title">{getTabTitle(tab)}</span>
               {contentModified[tab.id] && (
                 <span className="modified-indicator">●</span>
               )}
@@ -238,6 +264,7 @@ const Editor: React.FC = () => {
                 e.stopPropagation();
                 handleCloseTab(tab.id);
               }}
+              title="Close tab"
             >
               <X size={14} />
             </button>
@@ -247,56 +274,79 @@ const Editor: React.FC = () => {
 
       {/* Editor Content */}
       <div className="editor-content">
+        {/* Chapter Editor */}
         {currentChapter && (
           <StructuredEditor
             key={currentChapter.id}
             chapter={currentChapter}
             characters={characters}
-            locations={locations}
+            locations={locations || []}
             onContentChange={handleChapterContentChange}
             onSave={handleSaveChapter}
             isModified={contentModified[currentChapter.id] || false}
           />
         )}
 
+        {/* Character Editor */}
         {currentCharacter && (
           <CharacterEditor
             key={currentCharacter.id}
             character={currentCharacter}
             onSave={handleSaveCharacter}
             onCancel={() => closeTab(currentCharacter.id)}
-            onDelete={async (characterId: string) => {
-              const success = await deleteCharacter(characterId);
-              if (success) {
-                closeTab(characterId);
-              }
-              return success;
-            }}
-            getCharacterUsage={getCharacterUsage}
+            onDelete={
+              deleteCharacter
+                ? async (characterId: string) => {
+                    try {
+                      const success = await deleteCharacter(characterId);
+                      if (success) {
+                        closeTab(characterId);
+                      }
+                      return success;
+                    } catch (error) {
+                      console.error("Failed to delete character:", error);
+                      return false;
+                    }
+                  }
+                : undefined
+            }
+            usage={
+              getCharacterUsage ? getCharacterUsage(currentCharacter.id) : []
+            }
             isModified={contentModified[currentCharacter.id] || false}
-            onContentChange={() => {
+            onModifiedChange={(modified: boolean) => {
               setContentModified((prev) => ({
                 ...prev,
-                [currentCharacter.id]: true,
+                [currentCharacter.id]: modified,
               }));
             }}
           />
         )}
 
-        {currentLocation && (
+        {/* Location Editor */}
+        {currentLocation && updateLocation && (
           <LocationEditor
             key={currentLocation.id}
             location={currentLocation}
             onSave={handleSaveLocation}
             onCancel={() => closeTab(currentLocation.id)}
-            onDelete={async (locationId: string) => {
-              const success = await deleteLocation(locationId);
-              if (success) {
-                closeTab(locationId);
-              }
-              return success;
-            }}
-            getLocationUsage={getLocationUsage}
+            onDelete={
+              deleteLocation
+                ? async (locationId: string) => {
+                    try {
+                      const success = await deleteLocation(locationId);
+                      if (success) {
+                        closeTab(locationId);
+                      }
+                      return success;
+                    } catch (error) {
+                      console.error("Failed to delete location:", error);
+                      return false;
+                    }
+                  }
+                : undefined
+            }
+            getLocationUsage={getLocationUsage || (() => [])}
             isModified={contentModified[currentLocation.id] || false}
             onContentChange={() => {
               setContentModified((prev) => ({
@@ -306,6 +356,30 @@ const Editor: React.FC = () => {
             }}
           />
         )}
+
+        {/* Fallback for unsupported tab types */}
+        {!currentChapter &&
+          !currentCharacter &&
+          !currentLocation &&
+          activeTab && (
+            <div className="editor-fallback">
+              <div className="fallback-content">
+                <div className="fallback-icon">
+                  {getTabIcon(
+                    openTabs.find((t) => t.id === activeTab) || ({} as Tab)
+                  )}
+                </div>
+                <h3>Editor not available</h3>
+                <p>This content type doesn't have a dedicated editor yet.</p>
+                <div className="fallback-info">
+                  <strong>Tab ID:</strong> {activeTab}
+                  <br />
+                  <strong>Type:</strong>{" "}
+                  {openTabs.find((t) => t.id === activeTab)?.type || "unknown"}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );

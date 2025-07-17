@@ -1,4 +1,4 @@
-// src/components/LocationPanel/LocationPanel.tsx
+// src/components/LocationPanel/LocationPanel.tsx - Complete Fixed Version
 import React, { useState, useMemo } from "react";
 import {
   Search,
@@ -9,11 +9,16 @@ import {
   Edit3,
   Trash2,
   Eye,
+  Home,
+  TreePine,
+  Car,
+  Brain,
+  X,
 } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { Location } from "../../types/structured";
-import "./LocationPanel.css";
 import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
+import "./LocationPanel.css";
 
 interface LocationPanelProps {}
 
@@ -38,6 +43,8 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
 
   // Filter locations based on search and pinned status
   const filteredLocations = useMemo(() => {
+    if (!locations) return [];
+
     let filtered = locations.filter(
       (location) =>
         location.active &&
@@ -79,6 +86,8 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
   };
 
   const handleAddLocation = async (locationData: Omit<Location, "id">) => {
+    if (!addLocation) return;
+
     try {
       await addLocation(locationData);
       setShowAddForm(false);
@@ -92,6 +101,8 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     id: string,
     updates: Partial<Location>
   ) => {
+    if (!updateLocation) return;
+
     try {
       await updateLocation(id, updates);
       setEditingLocation(null);
@@ -102,6 +113,8 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
   };
 
   const handleDeleteLocation = async (location: Location) => {
+    if (!deleteLocation || !getLocationUsage) return;
+
     const usage = getLocationUsage(location.id);
 
     if (usage.length > 0) {
@@ -112,7 +125,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     }
 
     const isConfirmed = await confirm({
-      title: "Delete Item",
+      title: "Delete Location",
       message: `Are you sure you want to delete "${location.name}"?`,
     });
 
@@ -129,6 +142,33 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     }
   };
 
+  const handleOpenLocation = (location: Location) => {
+    if (openLocationTab) {
+      openLocationTab(location.id);
+    }
+  };
+
+  const handleQuickAdd = async () => {
+    const name = prompt("Location name:");
+    if (!name?.trim()) return;
+
+    try {
+      if (addLocation) {
+        await addLocation({
+          name: name.trim(),
+          description: "",
+          type: "indoor",
+          active: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error("Failed to add location:", error);
+      alert("Failed to add location. Please try again.");
+    }
+  };
+
   return (
     <div className="location-panel">
       {/* Header */}
@@ -137,13 +177,16 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
           <MapPin size={18} />
           <span>Locations</span>
         </div>
-        <button
-          className="add-btn"
-          onClick={() => setShowAddForm(true)}
-          title="Add new location"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="header-actions">
+          <span className="location-count">{locations?.length || 0}</span>
+          <button
+            className="add-btn"
+            onClick={() => setShowAddForm(true)}
+            title="Add new location"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -181,12 +224,19 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
           <div className="empty-state">
             <MapPin size={48} className="empty-icon" />
             <p>No locations found</p>
-            <button
-              className="create-first-btn"
-              onClick={() => setShowAddForm(true)}
-            >
-              Create your first location
-            </button>
+            {searchQuery ? (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </button>
+            ) : (
+              <button className="quick-add-btn" onClick={handleQuickAdd}>
+                <Plus size={16} />
+                Add location
+              </button>
+            )}
           </div>
         ) : (
           filteredLocations.map((location) => (
@@ -196,19 +246,19 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
               isPinned={pinnedLocations.has(location.id)}
               onTogglePin={() => handleTogglePin(location.id)}
               onInsert={() => handleInsertLocation(location)}
+              onView={() => handleOpenLocation(location)}
               onEdit={() => setEditingLocation(location)}
               onDelete={() => handleDeleteLocation(location)}
-              onView={() => openLocationTab(location.id)}
-              usage={getLocationUsage(location.id)}
+              usage={getLocationUsage ? getLocationUsage(location.id) : []}
             />
           ))
         )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Panel Footer */}
       <div className="panel-footer">
         <div className="quick-stats">
-          <span>{filteredLocations.length} locations</span>
+          <span>{filteredLocations.length} active</span>
           <span>•</span>
           <span>{pinnedLocations.size} pinned</span>
         </div>
@@ -226,9 +276,9 @@ interface LocationItemProps {
   isPinned: boolean;
   onTogglePin: () => void;
   onInsert: () => void;
+  onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onView: () => void;
   usage: any[];
 }
 
@@ -237,42 +287,62 @@ const LocationItem: React.FC<LocationItemProps> = ({
   isPinned,
   onTogglePin,
   onInsert,
+  onView,
   onEdit,
   onDelete,
-  onView,
   usage,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const getLocationIcon = () => {
     switch (location.type) {
       case "indoor":
-        return "🏠";
+        return <Home size={16} />;
       case "outdoor":
-        return "🌳";
+        return <TreePine size={16} />;
       case "vehicle":
-        return "🚗";
+        return <Car size={16} />;
       case "abstract":
-        return "💭";
+        return <Brain size={16} />;
       default:
-        return "📍";
+        return <MapPin size={16} />;
     }
   };
 
+  const getDisplayName = () => {
+    return location.names?.short || location.name;
+  };
+
+  const getTypeLabel = () => {
+    if (!location.type) return "Unknown";
+    return location.type.charAt(0).toUpperCase() + location.type.slice(1);
+  };
+
   return (
-    <div className="location-item">
+    <div
+      className={`location-item ${isPinned ? "pinned" : ""} ${
+        isExpanded ? "expanded" : ""
+      }`}
+    >
       <div className="location-header">
-        <div className="location-info">
-          <span className="location-icon">{getLocationIcon()}</span>
+        <div
+          className="location-info"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span
+            className="location-icon"
+            style={{ color: location.color || "#ef4444" }}
+          >
+            {getLocationIcon()}
+          </span>
           <div className="location-details">
-            <h4 className="location-name">{location.name}</h4>
-            {location.names?.short &&
-              location.names.short !== location.name && (
-                <span className="location-short-name">
-                  "{location.names.short}"
-                </span>
+            <h4 className="location-name">{getDisplayName()}</h4>
+            <div className="location-meta">
+              <span className="location-type">{getTypeLabel()}</span>
+              {usage.length > 0 && (
+                <span className="usage-count">{usage.length} mentions</span>
               )}
-            {usage.length > 0 && (
-              <span className="usage-count">{usage.length} mentions</span>
-            )}
+            </div>
           </div>
         </div>
 
@@ -288,15 +358,35 @@ const LocationItem: React.FC<LocationItemProps> = ({
       </div>
 
       {/* Description */}
-      {location.description && (
-        <div className="location-description">{location.description}</div>
+      {location.description && isExpanded && (
+        <div className="location-description">
+          {location.description.length > 150
+            ? `${location.description.substring(0, 150)}...`
+            : location.description}
+        </div>
       )}
 
       {/* Hierarchy */}
-      {location.parentLocation && (
+      {location.parentLocation && isExpanded && (
         <div className="location-hierarchy">
           <span className="hierarchy-label">Part of:</span>
           <span className="parent-location">{location.parentLocation}</span>
+        </div>
+      )}
+
+      {/* Display Names */}
+      {isExpanded && (location.names?.full || location.names?.description) && (
+        <div className="location-names">
+          {location.names?.full && (
+            <div className="name-item">
+              <strong>Full name:</strong> {location.names.full}
+            </div>
+          )}
+          {location.names?.description && (
+            <div className="name-item">
+              <strong>Descriptive:</strong> {location.names.description}
+            </div>
+          )}
         </div>
       )}
 
@@ -339,6 +429,26 @@ const LocationItem: React.FC<LocationItemProps> = ({
           {usage.length > 0 ? "In Use" : "Delete"}
         </button>
       </div>
+
+      {/* Usage Information */}
+      {isExpanded && usage.length > 0 && (
+        <div className="location-usage">
+          <h5>Used in:</h5>
+          <div className="usage-list">
+            {usage.slice(0, 3).map((use, index) => (
+              <div key={index} className="usage-item">
+                <span className="usage-file">{use.title}</span>
+                <span className="usage-mentions">{use.mentions} times</span>
+              </div>
+            ))}
+            {usage.length > 3 && (
+              <div className="usage-more">
+                +{usage.length - 3} more files...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -413,10 +523,28 @@ const LocationForm: React.FC<LocationFormProps> = ({
     }));
   };
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "indoor":
+        return <Home size={16} />;
+      case "outdoor":
+        return <TreePine size={16} />;
+      case "vehicle":
+        return <Car size={16} />;
+      case "abstract":
+        return <Brain size={16} />;
+      default:
+        return <MapPin size={16} />;
+    }
+  };
+
   return (
     <div className="location-form">
       <div className="form-header">
         <h3>{location ? "Edit Location" : "Add New Location"}</h3>
+        <button className="form-close" onClick={onCancel} title="Close form">
+          <X size={16} />
+        </button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -430,22 +558,29 @@ const LocationForm: React.FC<LocationFormProps> = ({
             placeholder="e.g., Academy Library"
             className="form-input"
             required
+            autoFocus
           />
         </div>
 
         <div className="form-group">
           <label htmlFor="type">Location Type</label>
-          <select
-            id="type"
-            value={formData.type}
-            onChange={(e) => handleInputChange("type", e.target.value)}
-            className="form-select"
-          >
-            <option value="indoor">Indoor</option>
-            <option value="outdoor">Outdoor</option>
-            <option value="vehicle">Vehicle</option>
-            <option value="abstract">Abstract</option>
-          </select>
+          <div className="type-selector">
+            {(["indoor", "outdoor", "vehicle", "abstract"] as const).map(
+              (type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`type-option ${
+                    formData.type === type ? "selected" : ""
+                  }`}
+                  onClick={() => handleInputChange("type", type)}
+                >
+                  {getTypeIcon(type)}
+                  <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                </button>
+              )
+            )}
+          </div>
         </div>
 
         <div className="form-group">
@@ -460,28 +595,44 @@ const LocationForm: React.FC<LocationFormProps> = ({
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="short-name">Short Name</label>
-          <input
-            id="short-name"
-            type="text"
-            value={formData.names.short}
-            onChange={(e) => handleNamesChange("short", e.target.value)}
-            placeholder="e.g., Library"
-            className="form-input"
-          />
-        </div>
+        <div className="form-section">
+          <h4>Display Names</h4>
 
-        <div className="form-group">
-          <label htmlFor="full-name">Full Name</label>
-          <input
-            id="full-name"
-            type="text"
-            value={formData.names.full}
-            onChange={(e) => handleNamesChange("full", e.target.value)}
-            placeholder="e.g., The Grand Academy Library"
-            className="form-input"
-          />
+          <div className="form-group">
+            <label htmlFor="short-name">Short Name</label>
+            <input
+              id="short-name"
+              type="text"
+              value={formData.names.short}
+              onChange={(e) => handleNamesChange("short", e.target.value)}
+              placeholder="e.g., Library"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="full-name">Full Name</label>
+            <input
+              id="full-name"
+              type="text"
+              value={formData.names.full}
+              onChange={(e) => handleNamesChange("full", e.target.value)}
+              placeholder="e.g., The Grand Academy Library"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="desc-name">Descriptive Name</label>
+            <input
+              id="desc-name"
+              type="text"
+              value={formData.names.description}
+              onChange={(e) => handleNamesChange("description", e.target.value)}
+              placeholder="e.g., The quiet, ancient library"
+              className="form-input"
+            />
+          </div>
         </div>
 
         <div className="form-group">
@@ -498,16 +649,24 @@ const LocationForm: React.FC<LocationFormProps> = ({
           />
         </div>
 
-        <div className="form-group-row">
+        <div className="form-row">
           <div className="form-group">
             <label htmlFor="color">Color</label>
-            <input
-              id="color"
-              type="color"
-              value={formData.color}
-              onChange={(e) => handleInputChange("color", e.target.value)}
-              className="form-color"
-            />
+            <div className="color-input-group">
+              <input
+                id="color"
+                type="color"
+                value={formData.color}
+                onChange={(e) => handleInputChange("color", e.target.value)}
+                className="form-color"
+              />
+              <span
+                className="color-preview"
+                style={{ backgroundColor: formData.color }}
+              >
+                📍 {formData.name || "Sample"}
+              </span>
+            </div>
           </div>
 
           <div className="form-group">

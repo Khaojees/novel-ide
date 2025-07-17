@@ -1,4 +1,4 @@
-// src/components/CharacterPanel/CharacterPanel.tsx - Updated for Structured Editor
+// src/components/CharacterPanel/CharacterPanel.tsx - Complete Fixed Version
 import React, { useState, useMemo } from "react";
 import {
   Search,
@@ -13,12 +13,13 @@ import {
 } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { CharacterContext } from "../../types/structured";
-import { Character } from "../../types";
+import { Character, CharacterUsage } from "../../types";
 
 interface CharacterPanelProps {}
 
 const CharacterPanel: React.FC<CharacterPanelProps> = () => {
-  const { characters, getCharacterUsage, openCharacterTab } = useProjectStore();
+  const { characters, getCharacterUsage, openCharacterTab, addCharacter } =
+    useProjectStore();
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [dialogueInputs, setDialogueInputs] = useState<Record<string, string>>(
@@ -114,6 +115,33 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     });
   };
 
+  const handleOpenCharacter = (character: Character) => {
+    // Use openCharacterTab with Character object
+    if (openCharacterTab) {
+      openCharacterTab(character);
+    }
+  };
+
+  const handleAddCharacter = async () => {
+    // Simple add character - you might want to make this more sophisticated
+    const name = prompt("Character name:");
+    if (!name?.trim()) return;
+
+    try {
+      if (addCharacter) {
+        await addCharacter({
+          name: name.trim(),
+          traits: "",
+          bio: "",
+          active: true,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to add character:", error);
+      alert("Failed to add character. Please try again.");
+    }
+  };
+
   return (
     <div className="character-panel">
       {/* Header */}
@@ -122,15 +150,16 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
           <User size={18} />
           <span>Characters</span>
         </div>
-        <button
-          className="add-btn"
-          onClick={() => {
-            /* TODO: Open character creation form */
-          }}
-          title="Add new character"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="header-actions">
+          <span className="character-count">{characters.length}</span>
+          <button
+            className="add-btn"
+            onClick={handleAddCharacter}
+            title="Add new character"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -151,6 +180,14 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
           <div className="empty-state">
             <User size={48} className="empty-icon" />
             <p>No characters found</p>
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           filteredCharacters.map((character) => (
@@ -159,17 +196,24 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
               character={character}
               isPinned={pinnedCharacters.has(character.id)}
               onTogglePin={() => handleTogglePin(character.id)}
-              onInsertDialogue={(text) => handleAddDialogue(character)}
+              onInsertDialogue={(text) => {
+                // Update the dialogue input and trigger add
+                setDialogueInputs((prev) => ({
+                  ...prev,
+                  [character.id]: text,
+                }));
+                handleAddDialogue(character);
+              }}
               onInsertCharacter={(context) =>
                 handleInsertCharacter(character, context)
               }
-              onView={() => openCharacterTab(character.id)}
+              onView={() => handleOpenCharacter(character)}
               dialogueInput={dialogueInputs[character.id] || ""}
               onDialogueInputChange={(value) =>
                 handleDialogueInputChange(character.id, value)
               }
               onKeyPress={(e) => handleKeyPress(e, character)}
-              usage={getCharacterUsage(character.id)}
+              usage={getCharacterUsage ? getCharacterUsage(character.id) : []}
             />
           ))
         )}
@@ -178,7 +222,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       {/* Panel Footer */}
       <div className="panel-footer">
         <div className="quick-stats">
-          <span>{filteredCharacters.length} characters</span>
+          <span>{filteredCharacters.length} active</span>
           <span>•</span>
           <span>{pinnedCharacters.size} pinned</span>
         </div>
@@ -201,7 +245,7 @@ interface CharacterItemProps {
   dialogueInput: string;
   onDialogueInputChange: (value: string) => void;
   onKeyPress: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  usage: any[];
+  usage: CharacterUsage[];
 }
 
 const CharacterItem: React.FC<CharacterItemProps> = ({
@@ -217,17 +261,37 @@ const CharacterItem: React.FC<CharacterItemProps> = ({
   usage,
 }) => {
   const [showDialogueInput, setShowDialogueInput] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getCharacterIcon = () => {
     // You could customize this based on character traits or type
+    if (character.color) {
+      return "👤";
+    }
     return "👤";
   };
 
+  const getDisplayName = () => {
+    return character.names?.dialogue || character.name;
+  };
+
   return (
-    <div className="character-item">
+    <div
+      className={`character-item ${isPinned ? "pinned" : ""} ${
+        isExpanded ? "expanded" : ""
+      }`}
+    >
       <div className="character-header">
-        <div className="character-info">
-          <span className="character-icon">{getCharacterIcon()}</span>
+        <div
+          className="character-info"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span
+            className="character-icon"
+            style={{ color: character.color || "#10b981" }}
+          >
+            {getCharacterIcon()}
+          </span>
           <div className="character-details">
             <h4 className="character-name">{character.name}</h4>
             {character.names?.dialogue &&
@@ -254,10 +318,18 @@ const CharacterItem: React.FC<CharacterItemProps> = ({
       </div>
 
       {/* Character Bio Preview */}
-      {character.bio && (
+      {character.bio && isExpanded && (
         <div className="character-bio">
-          {character.bio.substring(0, 100)}
-          {character.bio.length > 100 && "..."}
+          {character.bio.length > 150
+            ? `${character.bio.substring(0, 150)}...`
+            : character.bio}
+        </div>
+      )}
+
+      {/* Character Traits */}
+      {character.traits && isExpanded && (
+        <div className="character-traits">
+          <strong>Traits:</strong> {character.traits}
         </div>
       )}
 
@@ -307,7 +379,7 @@ const CharacterItem: React.FC<CharacterItemProps> = ({
             value={dialogueInput}
             onChange={(e) => onDialogueInputChange(e.target.value)}
             onKeyDown={onKeyPress}
-            placeholder={`What does ${character.name} say?`}
+            placeholder={`What does ${getDisplayName()} say?`}
             className="dialogue-input"
             rows={2}
             autoFocus
@@ -316,8 +388,10 @@ const CharacterItem: React.FC<CharacterItemProps> = ({
             <button
               className="dialogue-add-btn"
               onClick={() => {
-                onInsertDialogue(dialogueInput);
-                setShowDialogueInput(false);
+                if (dialogueInput.trim()) {
+                  onInsertDialogue(dialogueInput.trim());
+                  setShowDialogueInput(false);
+                }
               }}
               disabled={!dialogueInput.trim()}
             >
@@ -356,7 +430,32 @@ const CharacterItem: React.FC<CharacterItemProps> = ({
         >
           *sigh*
         </button>
+        <button
+          className="quick-dialogue-btn"
+          onClick={() => onInsertDialogue("*nods*")}
+          title="Add action"
+        >
+          *nods*
+        </button>
       </div>
+
+      {/* Usage Information */}
+      {isExpanded && usage.length > 0 && (
+        <div className="character-usage">
+          <h5>Used in:</h5>
+          <div className="usage-list">
+            {usage.slice(0, 3).map((use, index) => (
+              <div key={index} className="usage-item">
+                <span className="usage-file">{use.title}</span>
+                <span className="usage-type">{use.usageType}</span>
+              </div>
+            ))}
+            {usage.length > 3 && (
+              <div className="usage-more">+{usage.length - 3} more...</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

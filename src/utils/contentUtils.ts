@@ -329,8 +329,6 @@ const parseTextForMentions = (
   locations: Location[]
 ): ContentNode[] => {
   const nodes: ContentNode[] = [];
-  let remainingText = text;
-  let currentPosition = 0;
 
   // Find all mentions (characters and locations)
   const mentions: Array<{
