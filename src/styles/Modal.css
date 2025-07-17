@@ -180,3 +180,14 @@
     width: 100%;
   }
 }
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.color-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

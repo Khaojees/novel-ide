@@ -13,7 +13,8 @@
   border-bottom: 1px solid #30363d;
   padding: 0 1rem;
   overflow-x: auto;
-  align-items: flex-end;
+  align-items: center; /* เปลี่ยนเป็น center */
+  height: 48px; /* กำหนดความสูงคงที่ */
 }
 
 .editor-tabs::-webkit-scrollbar {
@@ -47,6 +48,8 @@
   position: relative;
   min-width: 120px;
   max-width: 200px;
+  height: 36px; /* ความสูงคงที่ */
+  box-sizing: border-box;
 }
 
 .editor-tab:hover {
@@ -56,7 +59,7 @@
 
 .editor-tab.active {
   color: #e6edf3;
-  background: #161b22;
+  background: #0d1117;
   border-color: #30363d;
   z-index: 1;
 }

@@ -196,31 +196,30 @@ const Editor: React.FC = () => {
     }
   };
 
-  // Get tab color
-  const getTabColor = (tab: Tab): string => {
-    switch (tab.type) {
-      case "character":
-        return "var(--character-color, #10b981)";
-      case "chapter":
-        return "var(--chapter-color, #3b82f6)";
-      case "idea":
-        return "var(--idea-color, #f59e0b)";
-      case "location":
-        return "var(--location-color, #ef4444)";
-      default:
-        return "var(--text-secondary, #6b7280)";
-    }
-  };
-
   // Get tab title
   const getTabTitle = (tab: Tab): string => {
     return tab.title || tab.name || "Untitled";
   };
 
+  const getTabType = (tab: Tab): string => {
+    switch (tab.type) {
+      case "character":
+        return "character";
+      case "chapter":
+        return "chapter";
+      case "idea":
+        return "idea";
+      case "location":
+        return "location";
+      default:
+        return "chapter";
+    }
+  };
+
   // Show empty state if no tabs
   if (openTabs.length === 0) {
     return (
-      <div className="editor">
+      <div className="editor-container">
         <div className="editor-empty">
           <div className="empty-state">
             <BookOpen size={64} className="empty-icon" />
@@ -236,28 +235,24 @@ const Editor: React.FC = () => {
   }
 
   return (
-    <div className="editor">
+    <div className="editor-container">
       {/* Tab Bar */}
-      <div className="tab-bar">
+      <div className="editor-tabs">
         {openTabs.map((tab) => (
           <div
             key={tab.id}
-            className={`tab ${activeTab === tab.id ? "active" : ""}`}
+            className={`editor-tab ${getTabType(tab)} ${
+              activeTab === tab.id ? "active" : ""
+            }`}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              borderTopColor:
-                activeTab === tab.id ? getTabColor(tab) : "transparent",
-            }}
           >
-            <div className="tab-content">
-              <div className="tab-icon" style={{ color: getTabColor(tab) }}>
-                {getTabIcon(tab)}
-              </div>
-              <span className="tab-title">{getTabTitle(tab)}</span>
-              {contentModified[tab.id] && (
-                <span className="modified-indicator">●</span>
-              )}
-            </div>
+            {/* แก้จาก tab-content เป็น tab-icon */}
+            <div className="tab-icon">{getTabIcon(tab)}</div>
+            {/* แก้จาก tab-title เป็น tab-name */}
+            <span className="tab-name">{getTabTitle(tab)}</span>
+            {contentModified[tab.id] && (
+              <span className="modified-indicator">●</span>
+            )}
             <button
               className="tab-close"
               onClick={(e) => {
