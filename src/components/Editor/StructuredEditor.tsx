@@ -23,6 +23,9 @@ import { AutocompleteDropdown } from "./AutocompleteDropdown";
 import { TextSpan } from "./TextSpan";
 import { LocationTag } from "./LocationTag";
 import { CharacterTag } from "./CharacterTag";
+import { useProjectStore } from "../../store/projectStore";
+import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
+import { RotateCcw, Save, Trash2 } from "lucide-react";
 
 interface StructuredEditorProps {
   chapter: StructuredChapter;
@@ -51,6 +54,8 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   }>({ x: 0, y: 0 });
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const { deleteChapter } = useProjectStore();
+  const confirm = useConfirm();
 
   // Update nodes when chapter changes
   useEffect(() => {
@@ -306,6 +311,46 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     console.log("Open location editor for:", locationId);
   };
 
+  const handleDeleteChapter = useCallback(async () => {
+    const isConfirmed = await confirm({
+      title: "Delete Chapter",
+      message: `Are you sure you want to delete "${chapter.metadata.title}"? This action cannot be undone.`,
+    });
+
+    if (isConfirmed && deleteChapter) {
+      try {
+        const success = await deleteChapter(chapter.id);
+        if (success) {
+          // Chapter และ tab จะถูกปิดโดยอัตโนมัติใน store
+          console.log("Chapter deleted successfully!");
+        } else {
+          alert("Failed to delete chapter. Please try again.");
+        }
+      } catch (error) {
+        console.error("Failed to delete chapter:", error);
+        alert("Failed to delete chapter. Please try again.");
+      }
+    }
+  }, [confirm, deleteChapter, chapter.id, chapter.metadata.title]);
+
+  // Handle discard changes
+  const handleDiscardChanges = useCallback(async () => {
+    if (!isModified) return;
+
+    const isConfirmed = await confirm({
+      title: "Discard Changes",
+      message: "Are you sure you want to discard all unsaved changes?",
+    });
+
+    if (isConfirmed) {
+      // Reset to original content
+      setNodes(chapter.content);
+      setCursorPosition(0);
+      // Force refresh if needed
+      window.location.reload();
+    }
+  }, [confirm, isModified, chapter.content]);
+
   return (
     <div className="structured-editor">
       {/* Toolbar */}
@@ -320,12 +365,37 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
             }{" "}
             words
           </span>
+
+          {/* Save Button */}
           <button
             className={`save-btn ${isModified ? "modified" : ""}`}
             onClick={onSave}
             disabled={!isModified}
           >
-            💾 {isModified ? "Save" : "Saved"}
+            <Save size={16} />
+            {isModified ? "Save" : "Saved"}
+          </button>
+
+          {/* Discard Button - แสดงเมื่อมีการแก้ไข */}
+          {isModified && (
+            <button
+              className="discard-btn"
+              onClick={handleDiscardChanges}
+              title="Discard all changes"
+            >
+              <RotateCcw size={16} />
+              Discard
+            </button>
+          )}
+
+          {/* Delete Button */}
+          <button
+            className="delete-btn"
+            onClick={handleDeleteChapter}
+            title="Delete this chapter"
+          >
+            <Trash2 size={16} />
+            Delete
           </button>
         </div>
       </div>

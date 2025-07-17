@@ -317,3 +317,85 @@
 .sidebar-section.locations .sidebar-item:focus {
   outline-color: var(--location-color);
 }
+
+
+/* Chapter item with delete button */
+.sidebar-section.chapters .sidebar-item.chapter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item:hover {
+  background-color: var(--chapter-bg);
+  border-left: 2px solid var(--chapter-color);
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .item-name {
+  flex: 1;
+  margin-right: 8px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item:hover .item-actions {
+  opacity: 1;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .word-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .delete-btn {
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .delete-btn:hover {
+  background-color: #f851491a;
+  color: #f85149;
+}
+
+.sidebar-section.chapters .sidebar-item.chapter-item .delete-btn:active {
+  transform: scale(0.95);
+}
+
+/* เพิ่ม hover effect สำหรับ chapter item */
+.sidebar-section.chapters .sidebar-item.chapter-item:hover .delete-btn {
+  opacity: 1;
+}
+
+/* เมื่อไม่ hover ให้ซ่อน delete button */
+.sidebar-section.chapters .sidebar-item.chapter-item .delete-btn {
+  opacity: 0;
+}
+
+/* Focus state สำหรับ accessibility */
+.sidebar-section.chapters .sidebar-item.chapter-item .delete-btn:focus {
+  opacity: 1;
+  outline: 2px solid var(--chapter-color);
+  outline-offset: 2px;
+}

@@ -37,6 +37,7 @@ interface ExtendedProjectState
   updateLocation?: (id: string, updates: Partial<Location>) => Promise<void>;
   deleteLocation?: (id: string) => Promise<boolean>;
   getLocationUsage?: (locationId: string) => any[];
+  deleteChapter?: (id: string) => Promise<boolean>;
 }
 
 export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
@@ -665,6 +666,44 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
     } catch (error) {
       console.error("Error adding chapter:", error);
       throw error;
+    }
+  },
+
+  deleteChapter: async (id: string): Promise<boolean> => {
+    const { chapters, projectPath, openTabs, activeTab } = get();
+    const fileAPI = getFileAPI();
+
+    if (!projectPath) return false;
+
+    const chapter = chapters.find((c) => c.id === id);
+    if (!chapter) return false;
+
+    try {
+      // ลบไฟล์จาก file system
+      const result = await fileAPI.deleteFile(chapter.path);
+
+      if (!result.success) {
+        throw new Error(`Failed to delete chapter file: ${result.error}`);
+      }
+
+      // อัปเดต chapters array
+      const updatedChapters = chapters.filter((c) => c.id !== id);
+
+      // ปิด tab ถ้าเปิดอยู่
+      const updatedTabs = openTabs.filter((tab) => tab.id !== id);
+      const newActiveTab = updatedTabs.length > 0 ? updatedTabs[0].id : null;
+
+      set({
+        chapters: updatedChapters,
+        openTabs: updatedTabs,
+        activeTab: activeTab === id ? newActiveTab : activeTab,
+      });
+
+      console.log("Chapter deleted successfully!");
+      return true;
+    } catch (error) {
+      console.error("Error deleting chapter:", error);
+      return false;
     }
   },
 

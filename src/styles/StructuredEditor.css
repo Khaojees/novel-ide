@@ -555,3 +555,157 @@
     display: none;
   }
 }
+
+
+/* ปุ่ม Discard */
+.discard-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f59e0b;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.discard-btn:hover {
+  background: #d97706;
+  border-color: #d97706;
+  transform: translateY(-1px);
+}
+
+.discard-btn:active {
+  transform: translateY(0);
+}
+
+/* ปุ่ม Delete */
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #f85149;
+  border-color: #f85149;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.delete-btn:active {
+  transform: translateY(0);
+}
+
+/* ปรับปรุง toolbar-right ให้มี gap */
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ปรับปรุง save-btn ให้มี icon */
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.save-btn.modified {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: white;
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-btn:disabled:hover {
+  transform: none;
+}
+
+/* Animation เมื่อปุ่มปรากฏ */
+.discard-btn {
+  animation: fadeInSlide 0.2s ease-out;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .toolbar-right {
+    gap: 8px;
+  }
+  
+  .save-btn,
+  .discard-btn,
+  .delete-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .save-btn span,
+  .discard-btn span,
+  .delete-btn span {
+    display: none; /* ซ่อนข้อความ แสดงแค่ icon */
+  }
+}
+
+/* Focus states สำหรับ accessibility */
+.save-btn:focus,
+.discard-btn:focus,
+.delete-btn:focus {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+/* Danger confirmation state */
+.delete-btn.confirming {
+  background: #f85149;
+  border-color: #f85149;
+  color: white;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
