@@ -39,4 +39,239 @@
 @import './styles/StructuredEditor.css';
 @import './styles/LocationPanel.css';
 
-/* You can add any additional app-specific styles here */
+/* ===== UPDATED APP LAYOUT ===== */
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+/* Sidebar - component แรก */
+.app-layout > div:first-child {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+/* Editor - component กลาง */
+.app-layout > div:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Right panels container - component สุดท้าย */
+.right-panels {
+  width: 320px;
+  flex-shrink: 0;
+  background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.character-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.location-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ให้ CharacterPanel และ LocationPanel เติมเต็ม container */
+.character-panel-container .character-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.location-panel-container .location-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 1400px) {
+  .right-panels {
+    width: 280px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .app-layout > div:first-child {
+    width: 240px;
+  }
+  
+  .right-panels {
+    width: 260px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .app-layout > div:first-child {
+    width: 100%;
+    height: 60px;
+  }
+  
+  .right-panels {
+    width: 100%;
+    height: 40vh;
+    flex-direction: row;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .character-panel-container {
+    flex: 1;
+    border-bottom: none;
+    border-right: 1px solid var(--border-color);
+  }
+  
+  .location-panel-container {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .right-panels {
+    flex-direction: column;
+    height: 50vh;
+  }
+  
+  .character-panel-container {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+/* ===== PANEL SCROLLING ===== */
+
+.character-panel-container .characters-list,
+.location-panel-container .locations-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ===== PANEL HEIGHTS ===== */
+
+/* ถ้าต้องการให้ CharacterPanel และ LocationPanel มีสัดส่วนที่ไม่เท่ากัน */
+.character-panel-container {
+  /* flex: 1.2; */ /* ให้ CharacterPanel ใหญ่กว่า LocationPanel เล็กน้อย */
+}
+
+.location-panel-container {
+  /* flex: 0.8; */ /* ให้ LocationPanel เล็กกว่า CharacterPanel เล็กน้อย */
+}
+
+/* ===== PANEL HEADERS ===== */
+
+.character-panel-container .panel-header,
+.location-panel-container .panel-header {
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.character-panel-container .search-container,
+.location-panel-container .search-container {
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ===== PANEL FOOTERS ===== */
+
+.character-panel-container .panel-footer,
+.location-panel-container .panel-footer {
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ===== LOADING STATE ===== */
+
+.right-panels.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ===== PANEL TOGGLE (สำหรับอนาคต) ===== */
+
+.right-panels.character-only .location-panel-container {
+  display: none;
+}
+
+.right-panels.location-only .character-panel-container {
+  display: none;
+}
+
+.right-panels.character-only .character-panel-container,
+.right-panels.location-only .location-panel-container {
+  flex: 1;
+  border-bottom: none;
+  border-right: none;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.panel-divider {
+  height: 1px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.panel-resize-handle {
+  height: 4px;
+  background: transparent;
+  cursor: row-resize;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.panel-resize-handle:hover {
+  background: var(--border-color);
+}
+
+.panel-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
+}
+
+/* ===== DARK MODE ADJUSTMENTS ===== */
+
+@media (prefers-color-scheme: dark) {
+  .right-panels {
+    background-color: var(--bg-secondary);
+  }
+  
+  .character-panel-container,
+  .location-panel-container {
+    background-color: var(--bg-secondary);
+  }
+}

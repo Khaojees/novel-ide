@@ -1,4 +1,4 @@
-// src/components/LocationPanel/LocationPanel.tsx - Complete Fixed Version
+// src/components/LocationPanel/LocationPanel.tsx - Simplified Version
 import React, { useState, useMemo } from "react";
 import {
   Search,
@@ -6,40 +6,24 @@ import {
   PinOff,
   MapPin,
   Plus,
-  Edit3,
-  Trash2,
-  Eye,
   Home,
   TreePine,
   Car,
   Brain,
-  X,
 } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { Location } from "../../types/structured";
-import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
-import "./LocationPanel.css";
 
 interface LocationPanelProps {}
 
 const LocationPanel: React.FC<LocationPanelProps> = () => {
-  const {
-    locations,
-    addLocation,
-    updateLocation,
-    deleteLocation,
-    getLocationUsage,
-    openLocationTab,
-  } = useProjectStore();
-
-  const confirm = useConfirm();
+  const { locations, addLocation, getLocationUsage, openLocationTab } =
+    useProjectStore();
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [pinnedLocations, setPinnedLocations] = useState<Set<string>>(
     new Set()
   );
-  const [showAddForm, setShowAddForm] = useState<boolean>(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
 
   // Filter locations based on search and pinned status
   const filteredLocations = useMemo(() => {
@@ -85,63 +69,6 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     window.dispatchEvent(event);
   };
 
-  const handleAddLocation = async (locationData: Omit<Location, "id">) => {
-    if (!addLocation) return;
-
-    try {
-      await addLocation(locationData);
-      setShowAddForm(false);
-    } catch (error) {
-      console.error("Failed to add location:", error);
-      alert("Failed to add location. Please try again.");
-    }
-  };
-
-  const handleUpdateLocation = async (
-    id: string,
-    updates: Partial<Location>
-  ) => {
-    if (!updateLocation) return;
-
-    try {
-      await updateLocation(id, updates);
-      setEditingLocation(null);
-    } catch (error) {
-      console.error("Failed to update location:", error);
-      alert("Failed to update location. Please try again.");
-    }
-  };
-
-  const handleDeleteLocation = async (location: Location) => {
-    if (!deleteLocation || !getLocationUsage) return;
-
-    const usage = getLocationUsage(location.id);
-
-    if (usage.length > 0) {
-      alert(
-        `Cannot delete "${location.name}". Location is used in ${usage.length} file(s).`
-      );
-      return;
-    }
-
-    const isConfirmed = await confirm({
-      title: "Delete Location",
-      message: `Are you sure you want to delete "${location.name}"?`,
-    });
-
-    if (isConfirmed) {
-      try {
-        const success = await deleteLocation(location.id);
-        if (!success) {
-          alert("Failed to delete location. Please try again.");
-        }
-      } catch (error) {
-        console.error("Failed to delete location:", error);
-        alert("Failed to delete location. Please try again.");
-      }
-    }
-  };
-
   const handleOpenLocation = (location: Location) => {
     if (openLocationTab) {
       openLocationTab(location.id);
@@ -181,7 +108,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
           <span className="location-count">{locations?.length || 0}</span>
           <button
             className="add-btn"
-            onClick={() => setShowAddForm(true)}
+            onClick={handleQuickAdd}
             title="Add new location"
           >
             <Plus size={16} />
@@ -201,23 +128,6 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
         />
       </div>
 
-      {/* Add Location Form */}
-      {showAddForm && (
-        <LocationForm
-          onSubmit={handleAddLocation}
-          onCancel={() => setShowAddForm(false)}
-        />
-      )}
-
-      {/* Edit Location Form */}
-      {editingLocation && (
-        <LocationForm
-          location={editingLocation}
-          onSubmit={(data) => handleUpdateLocation(editingLocation.id, data)}
-          onCancel={() => setEditingLocation(null)}
-        />
-      )}
-
       {/* Locations List */}
       <div className="locations-list">
         {filteredLocations.length === 0 ? (
@@ -232,7 +142,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
                 Clear search
               </button>
             ) : (
-              <button className="quick-add-btn" onClick={handleQuickAdd}>
+              <button className="clear-search-btn" onClick={handleQuickAdd}>
                 <Plus size={16} />
                 Add location
               </button>
@@ -247,8 +157,6 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
               onTogglePin={() => handleTogglePin(location.id)}
               onInsert={() => handleInsertLocation(location)}
               onView={() => handleOpenLocation(location)}
-              onEdit={() => setEditingLocation(location)}
-              onDelete={() => handleDeleteLocation(location)}
               usage={getLocationUsage ? getLocationUsage(location.id) : []}
             />
           ))
@@ -268,7 +176,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
 };
 
 // ========================================
-// LOCATION ITEM COMPONENT
+// SIMPLIFIED LOCATION ITEM COMPONENT
 // ========================================
 
 interface LocationItemProps {
@@ -277,8 +185,6 @@ interface LocationItemProps {
   onTogglePin: () => void;
   onInsert: () => void;
   onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
   usage: any[];
 }
 
@@ -288,8 +194,6 @@ const LocationItem: React.FC<LocationItemProps> = ({
   onTogglePin,
   onInsert,
   onView,
-  onEdit,
-  onDelete,
   usage,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -318,6 +222,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
     return location.type.charAt(0).toUpperCase() + location.type.slice(1);
   };
 
+  const handleLocationClick = () => {
+    // คลิกที่ชื่อสถานที่เพื่อเปิด tab
+    onView();
+  };
+
   return (
     <div
       className={`location-item ${isPinned ? "pinned" : ""} ${
@@ -336,7 +245,16 @@ const LocationItem: React.FC<LocationItemProps> = ({
             {getLocationIcon()}
           </span>
           <div className="location-details">
-            <h4 className="location-name">{getDisplayName()}</h4>
+            <h4
+              className="location-name"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLocationClick();
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              {getDisplayName()}
+            </h4>
             <div className="location-meta">
               <span className="location-type">{getTypeLabel()}</span>
               {usage.length > 0 && (
@@ -390,7 +308,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* Simplified Quick Actions - Only Insert */}
       <div className="location-quick-actions">
         <button
           className="quick-action-btn insert-btn"
@@ -399,34 +317,6 @@ const LocationItem: React.FC<LocationItemProps> = ({
         >
           <MapPin size={14} />
           Insert
-        </button>
-
-        <button
-          className="quick-action-btn view-btn"
-          onClick={onView}
-          title="View location details"
-        >
-          <Eye size={14} />
-          View
-        </button>
-
-        <button
-          className="quick-action-btn edit-btn"
-          onClick={onEdit}
-          title="Edit location"
-        >
-          <Edit3 size={14} />
-          Edit
-        </button>
-
-        <button
-          className="quick-action-btn delete-btn"
-          onClick={onDelete}
-          title="Delete location"
-          disabled={usage.length > 0}
-        >
-          <Trash2 size={14} />
-          {usage.length > 0 ? "In Use" : "Delete"}
         </button>
       </div>
 
@@ -449,247 +339,6 @@ const LocationItem: React.FC<LocationItemProps> = ({
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// ========================================
-// LOCATION FORM COMPONENT
-// ========================================
-
-interface LocationFormProps {
-  location?: Location;
-  onSubmit: (data: Omit<Location, "id">) => void;
-  onCancel: () => void;
-}
-
-const LocationForm: React.FC<LocationFormProps> = ({
-  location,
-  onSubmit,
-  onCancel,
-}) => {
-  const [formData, setFormData] = useState({
-    name: location?.name || "",
-    description: location?.description || "",
-    type: location?.type || ("indoor" as const),
-    names: {
-      short: location?.names?.short || "",
-      full: location?.names?.full || "",
-      description: location?.names?.description || "",
-    },
-    parentLocation: location?.parentLocation || "",
-    color: location?.color || "#ef4444",
-    active: location?.active ?? true,
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
-      alert("Location name is required");
-      return;
-    }
-
-    onSubmit({
-      ...formData,
-      name: formData.name.trim(),
-      description: formData.description.trim() || undefined,
-      parentLocation: formData.parentLocation.trim() || undefined,
-      names: {
-        short: formData.names.short.trim() || undefined,
-        full: formData.names.full.trim() || undefined,
-        description: formData.names.description.trim() || undefined,
-      },
-      subLocations: location?.subLocations || [],
-      createdAt: location?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleNamesChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      names: {
-        ...prev.names,
-        [field]: value,
-      },
-    }));
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "indoor":
-        return <Home size={16} />;
-      case "outdoor":
-        return <TreePine size={16} />;
-      case "vehicle":
-        return <Car size={16} />;
-      case "abstract":
-        return <Brain size={16} />;
-      default:
-        return <MapPin size={16} />;
-    }
-  };
-
-  return (
-    <div className="location-form">
-      <div className="form-header">
-        <h3>{location ? "Edit Location" : "Add New Location"}</h3>
-        <button className="form-close" onClick={onCancel} title="Close form">
-          <X size={16} />
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="name">Location Name *</label>
-          <input
-            id="name"
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleInputChange("name", e.target.value)}
-            placeholder="e.g., Academy Library"
-            className="form-input"
-            required
-            autoFocus
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="type">Location Type</label>
-          <div className="type-selector">
-            {(["indoor", "outdoor", "vehicle", "abstract"] as const).map(
-              (type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`type-option ${
-                    formData.type === type ? "selected" : ""
-                  }`}
-                  onClick={() => handleInputChange("type", type)}
-                >
-                  {getTypeIcon(type)}
-                  <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                </button>
-              )
-            )}
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            placeholder="Describe this location..."
-            className="form-textarea"
-            rows={3}
-          />
-        </div>
-
-        <div className="form-section">
-          <h4>Display Names</h4>
-
-          <div className="form-group">
-            <label htmlFor="short-name">Short Name</label>
-            <input
-              id="short-name"
-              type="text"
-              value={formData.names.short}
-              onChange={(e) => handleNamesChange("short", e.target.value)}
-              placeholder="e.g., Library"
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="full-name">Full Name</label>
-            <input
-              id="full-name"
-              type="text"
-              value={formData.names.full}
-              onChange={(e) => handleNamesChange("full", e.target.value)}
-              placeholder="e.g., The Grand Academy Library"
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="desc-name">Descriptive Name</label>
-            <input
-              id="desc-name"
-              type="text"
-              value={formData.names.description}
-              onChange={(e) => handleNamesChange("description", e.target.value)}
-              placeholder="e.g., The quiet, ancient library"
-              className="form-input"
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="parent-location">Parent Location</label>
-          <input
-            id="parent-location"
-            type="text"
-            value={formData.parentLocation}
-            onChange={(e) =>
-              handleInputChange("parentLocation", e.target.value)
-            }
-            placeholder="e.g., Academy Campus"
-            className="form-input"
-          />
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="color">Color</label>
-            <div className="color-input-group">
-              <input
-                id="color"
-                type="color"
-                value={formData.color}
-                onChange={(e) => handleInputChange("color", e.target.value)}
-                className="form-color"
-              />
-              <span
-                className="color-preview"
-                style={{ backgroundColor: formData.color }}
-              >
-                📍 {formData.name || "Sample"}
-              </span>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={formData.active}
-                onChange={(e) => handleInputChange("active", e.target.checked)}
-              />
-              <span className="checkbox-text">Active Location</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="form-actions">
-          <button type="button" onClick={onCancel} className="cancel-btn">
-            Cancel
-          </button>
-          <button type="submit" className="submit-btn">
-            {location ? "Update" : "Create"} Location
-          </button>
-        </div>
-      </form>
     </div>
   );
 };

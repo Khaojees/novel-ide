@@ -19,6 +19,10 @@ import {
   renderNodesToText,
 } from "../../utils/contentUtils";
 import { Character } from "../../types";
+import { AutocompleteDropdown } from "./AutocompleteDropdown";
+import { TextSpan } from "./TextSpan";
+import { LocationTag } from "./LocationTag";
+import { CharacterTag } from "./CharacterTag";
 
 interface StructuredEditorProps {
   chapter: StructuredChapter;
@@ -47,7 +51,6 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   }>({ x: 0, y: 0 });
 
   const editorRef = useRef<HTMLDivElement>(null);
-  const autocompleteRef = useRef<HTMLDivElement>(null);
 
   // Update nodes when chapter changes
   useEffect(() => {
@@ -68,8 +71,8 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSave]);
 
   // Insert character tag at cursor position
@@ -135,11 +138,6 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     }
   }, []);
 
-  // Handle text input in autocomplete
-  const handleAutocompleteInput = useCallback((query: string) => {
-    setAutocompleteQuery(query);
-  }, []);
-
   // Get autocomplete suggestions
   const getAutocompleteSuggestions = useCallback((): AutocompleteItem[] => {
     const suggestions: AutocompleteItem[] = [];
@@ -191,7 +189,7 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     [insertCharacterTag, insertLocationTag]
   );
 
-  // Listen for events from CharacterPanel
+  // Listen for events from CharacterPanel and LocationPanel
   useEffect(() => {
     const handleInsertDialogue = (event: CustomEvent) => {
       const { characterId, text } = event.detail;
@@ -210,6 +208,11 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       insertCharacterTag(characterId, context);
     };
 
+    const handleInsertLocationTag = (event: CustomEvent) => {
+      const { locationId } = event.detail;
+      insertLocationTag(locationId);
+    };
+
     window.addEventListener(
       "insertDialogue",
       handleInsertDialogue as EventListener
@@ -217,6 +220,10 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     window.addEventListener(
       "insertCharacterTag",
       handleInsertCharacterTag as EventListener
+    );
+    window.addEventListener(
+      "insertLocationTag",
+      handleInsertLocationTag as EventListener
     );
 
     return () => {
@@ -228,8 +235,12 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
         "insertCharacterTag",
         handleInsertCharacterTag as EventListener
       );
+      window.removeEventListener(
+        "insertLocationTag",
+        handleInsertLocationTag as EventListener
+      );
     };
-  }, [insertCharacterTag, insertText]);
+  }, [insertCharacterTag, insertLocationTag, insertText]);
 
   // Render individual node
   const renderNode = (node: ContentNode, index: number) => {
@@ -335,318 +346,23 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
           style={{
             display: showAutocomplete ? "none" : "inline-block",
           }}
-        />
+        >
+          |
+        </span>
       </div>
 
       {/* Autocomplete Dropdown */}
       {showAutocomplete && (
         <AutocompleteDropdown
-          ref={autocompleteRef}
           position={autocompletePosition}
           query={autocompleteQuery}
           suggestions={getAutocompleteSuggestions()}
           onSelect={handleAutocompleteSelect}
           onClose={() => setShowAutocomplete(false)}
-          onQueryChange={handleAutocompleteInput}
         />
       )}
     </div>
   );
 };
-
-// ========================================
-// CHARACTER TAG COMPONENT
-// ========================================
-
-interface CharacterTagProps {
-  node: CharacterNode;
-  character?: Character;
-  isActive: boolean;
-  onClick: () => void;
-  onEdit: () => void;
-}
-
-const CharacterTag: React.FC<CharacterTagProps> = ({
-  node,
-  character,
-  isActive,
-  onClick,
-  onEdit,
-}) => {
-  const getDisplayName = () => {
-    if (!character) return "[Unknown Character]";
-
-    switch (node.context) {
-      case "dialogue":
-        return character.names?.dialogue || character.name;
-      case "narrative":
-        return character.names?.narrative || character.name;
-      case "reference":
-        return character.names?.reference || character.name;
-      default:
-        return character.name;
-    }
-  };
-
-  const getTagClass = () => {
-    let className = "character-tag";
-    className += ` context-${node.context}`;
-    if (isActive) className += " active";
-    if (!character) className += " error";
-    return className;
-  };
-
-  return (
-    <span
-      className={getTagClass()}
-      onClick={onClick}
-      onDoubleClick={onEdit}
-      title={`${character?.name || "Unknown"} (${node.context})`}
-      style={{
-        backgroundColor: character?.color || "#3b82f6",
-        color: "white",
-      }}
-    >
-      {getDisplayName()}
-      {node.context === "dialogue" && ":"}
-      {node.emotion && <span className="emotion-indicator">😊</span>}
-    </span>
-  );
-};
-
-// ========================================
-// LOCATION TAG COMPONENT
-// ========================================
-
-interface LocationTagProps {
-  node: LocationNode;
-  location?: Location;
-  isActive: boolean;
-  onClick: () => void;
-  onEdit: () => void;
-}
-
-const LocationTag: React.FC<LocationTagProps> = ({
-  node,
-  location,
-  isActive,
-  onClick,
-  onEdit,
-}) => {
-  const getDisplayName = () => {
-    if (!location) return "[Unknown Location]";
-    return location.names?.short || location.name;
-  };
-
-  const getTagClass = () => {
-    let className = "location-tag";
-    if (isActive) className += " active";
-    if (!location) className += " error";
-    return className;
-  };
-
-  return (
-    <span
-      className={getTagClass()}
-      onClick={onClick}
-      onDoubleClick={onEdit}
-      title={location?.description || location?.name || "Unknown location"}
-      style={{
-        backgroundColor: location?.color || "#ef4444",
-        color: "white",
-      }}
-    >
-      📍 {getDisplayName()}
-    </span>
-  );
-};
-
-// ========================================
-// TEXT SPAN COMPONENT
-// ========================================
-
-interface TextSpanProps {
-  node: TextNode;
-  isActive: boolean;
-  onClick: () => void;
-  onTextChange: (newText: string) => void;
-  onKeyDown: (event: React.KeyboardEvent) => void;
-}
-
-const TextSpan: React.FC<TextSpanProps> = ({
-  node,
-  isActive,
-  onClick,
-  onTextChange,
-  onKeyDown,
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(node.content);
-
-  const handleDoubleClick = () => {
-    setIsEditing(true);
-    setEditText(node.content);
-  };
-
-  const handleSubmit = () => {
-    onTextChange(editText);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit();
-    } else if (e.key === "Escape") {
-      setIsEditing(false);
-      setEditText(node.content);
-    } else {
-      onKeyDown(e);
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <input
-        type="text"
-        value={editText}
-        onChange={(e) => setEditText(e.target.value)}
-        onBlur={handleSubmit}
-        onKeyDown={handleKeyDown}
-        className="text-input"
-        autoFocus
-      />
-    );
-  }
-
-  return (
-    <span
-      className={`text-span ${isActive ? "active" : ""}`}
-      onClick={onClick}
-      onDoubleClick={handleDoubleClick}
-    >
-      {node.content}
-    </span>
-  );
-};
-
-// ========================================
-// AUTOCOMPLETE DROPDOWN
-// ========================================
-
-interface AutocompleteDropdownProps {
-  position: { x: number; y: number };
-  query: string;
-  suggestions: AutocompleteItem[];
-  onSelect: (item: AutocompleteItem, context?: CharacterContext) => void;
-  onClose: () => void;
-  onQueryChange: (query: string) => void;
-}
-
-const AutocompleteDropdown = React.forwardRef<
-  HTMLDivElement,
-  AutocompleteDropdownProps
->(({ position, query, suggestions, onSelect, onClose, onQueryChange }, ref) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [contextMenu, setContextMenu] = useState<{
-    item: AutocompleteItem;
-    show: boolean;
-  }>({
-    item: suggestions[0],
-    show: false,
-  });
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setSelectedIndex(Math.min(selectedIndex + 1, suggestions.length - 1));
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setSelectedIndex(Math.max(selectedIndex - 1, 0));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (suggestions[selectedIndex]) {
-          if (suggestions[selectedIndex].type === "character") {
-            setContextMenu({ item: suggestions[selectedIndex], show: true });
-          } else {
-            onSelect(suggestions[selectedIndex]);
-          }
-        }
-        break;
-      case "Escape":
-        onClose();
-        break;
-    }
-  };
-
-  return (
-    <div
-      ref={ref}
-      className="autocomplete-dropdown"
-      style={{
-        position: "absolute",
-        left: position.x,
-        top: position.y,
-        zIndex: 1000,
-      }}
-    >
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Search characters or locations..."
-        className="autocomplete-input"
-        autoFocus
-      />
-
-      <div className="autocomplete-suggestions">
-        {suggestions.map((item, index) => (
-          <div
-            key={item.id}
-            className={`suggestion-item ${
-              index === selectedIndex ? "selected" : ""
-            }`}
-            onClick={() => {
-              if (item.type === "character") {
-                setContextMenu({ item, show: true });
-              } else {
-                onSelect(item);
-              }
-            }}
-          >
-            <span className="suggestion-icon">
-              {item.type === "character" ? "👤" : "📍"}
-            </span>
-            <div className="suggestion-content">
-              <div className="suggestion-name">{item.name}</div>
-              {item.description && (
-                <div className="suggestion-description">{item.description}</div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Context menu for character insertion */}
-      {contextMenu.show && (
-        <div className="context-menu">
-          <button onClick={() => onSelect(contextMenu.item, "dialogue")}>
-            💬 Add as Dialogue
-          </button>
-          <button onClick={() => onSelect(contextMenu.item, "narrative")}>
-            📝 Add as Narrative
-          </button>
-          <button onClick={() => onSelect(contextMenu.item, "reference")}>
-            👁 Add as Reference
-          </button>
-        </div>
-      )}
-    </div>
-  );
-});
 
 export default StructuredEditor;

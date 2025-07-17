@@ -4,6 +4,7 @@ import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Editor from "./components/Editor/Editor";
 import CharacterPanel from "./components/CharacterPanel/CharacterPanel";
+import LocationPanel from "./components/LocationPanel/LocationPanel";
 import { useProjectStore } from "./store/projectStore";
 import { ConfirmDialogProvider } from "./components/ConfirmDialogContext/ConfirmDialogContext";
 
@@ -93,52 +94,19 @@ const App: React.FC = () => {
       setIsLoading(true);
 
       if (!window.electronAPI) {
-        // Browser mode - simulate project loading
-        const existingProjects = [
-          "/projects/fantasy-novel",
-          "/projects/sci-fi-story",
-          "/projects/mystery-book",
-        ];
-
-        const choice = prompt(
-          `Available projects:\n${existingProjects
-            .map((p, i) => `${i + 1}. ${p}`)
-            .join("\n")}\n\nEnter project number:`
-        );
-
-        if (choice) {
-          const index = parseInt(choice) - 1;
-          if (index >= 0 && index < existingProjects.length) {
-            await loadProject(existingProjects[index]);
-            setIsProjectLoaded(true);
-          }
+        // Browser mode - simulate project selection
+        const projectName = prompt("Enter project name to open:");
+        if (projectName) {
+          const mockPath = `/projects/${projectName}`;
+          await loadProject(mockPath);
+          setIsProjectLoaded(true);
         }
       } else {
         // Electron mode - use real directory picker
         const result = await window.electronAPI.selectDirectory();
         if (!result.canceled && result.filePaths.length > 0) {
-          const selectedPath = result.filePaths[0];
-
-          // Validate that it's a valid project directory
-          const charactersCheck = await window.electronAPI.readDirectory(
-            `${selectedPath}/characters`
-          );
-          const chaptersCheck = await window.electronAPI.readDirectory(
-            `${selectedPath}/chapters`
-          );
-
-          if (charactersCheck.success || chaptersCheck.success) {
-            await loadProject(selectedPath);
-            setIsProjectLoaded(true);
-          } else {
-            const confirm = window.confirm(
-              "This doesn't appear to be a Novel IDE project directory. Would you like to initialize it as a new project?"
-            );
-            if (confirm) {
-              await createNewProject(selectedPath);
-              setIsProjectLoaded(true);
-            }
-          }
+          await loadProject(result.filePaths[0]);
+          setIsProjectLoaded(true);
         }
       }
     } catch (error) {
@@ -147,11 +115,11 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [createNewProject, loadProject]);
+  }, [loadProject]);
 
-  const handleCloseProject = useCallback(() => {
+  const handleCloseProject = useCallback((): void => {
     const confirm = window.confirm(
-      "Are you sure you want to close the current project? Any unsaved changes will be lost."
+      "Are you sure you want to close this project? Any unsaved changes will be lost."
     );
     if (confirm) {
       clearProject();
@@ -311,7 +279,14 @@ const App: React.FC = () => {
           <div className="app-layout">
             <Sidebar />
             <Editor />
-            <CharacterPanel />
+            <div className="right-panels">
+              <div className="character-panel-container">
+                <CharacterPanel />
+              </div>
+              <div className="location-panel-container">
+                <LocationPanel />
+              </div>
+            </div>
           </div>
         )}
       </div>

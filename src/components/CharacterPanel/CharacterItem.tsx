@@ -1,11 +1,8 @@
-// ========================================
-// CHARACTER ITEM COMPONENT
-// ========================================
-
-import { useState } from "react";
-import { Character, CharacterUsage } from "../../types";
+// src/components/CharacterPanel/CharacterItem.tsx - Simplified Version
+import React, { useState } from "react";
+import { Pin, PinOff, MessageCircle, BookOpen, Eye } from "lucide-react";
+import { Character } from "../../types";
 import { CharacterContext } from "../../types/structured";
-import { BookOpen, Edit3, Eye, MessageCircle, Pin, PinOff } from "lucide-react";
 
 interface CharacterItemProps {
   character: Character;
@@ -16,8 +13,8 @@ interface CharacterItemProps {
   onView: () => void;
   dialogueInput: string;
   onDialogueInputChange: (value: string) => void;
-  onKeyPress: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  usage: CharacterUsage[];
+  onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  usage: any[];
 }
 
 export const CharacterItem: React.FC<CharacterItemProps> = ({
@@ -32,19 +29,16 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
   onKeyPress,
   usage,
 }) => {
-  const [showDialogueInput, setShowDialogueInput] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const getCharacterIcon = () => {
-    // You could customize this based on character traits or type
-    if (character.color) {
-      return "👤";
-    }
-    return "👤";
-  };
+  const [showDialogueInput, setShowDialogueInput] = useState(false);
 
   const getDisplayName = () => {
     return character.names?.dialogue || character.name;
+  };
+
+  const handleCharacterClick = () => {
+    // คลิกที่ชื่อตัวละครเพื่อเปิด tab
+    onView();
   };
 
   return (
@@ -58,23 +52,25 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
           className="character-info"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <span
-            className="character-icon"
-            style={{ color: character.color || "#10b981" }}
-          >
-            {getCharacterIcon()}
-          </span>
           <div className="character-details">
-            <h4 className="character-name">{character.name}</h4>
-            {character.names?.dialogue &&
-              character.names.dialogue !== character.name && (
-                <span className="character-dialogue-name">
-                  "{character.names.dialogue}"
-                </span>
+            <h4
+              className="character-name"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCharacterClick();
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              {character.name}
+            </h4>
+            <div className="character-meta">
+              <span className="character-dialogue-name">
+                {getDisplayName()}
+              </span>
+              {usage.length > 0 && (
+                <span className="usage-count">{usage.length} mentions</span>
               )}
-            {usage.length > 0 && (
-              <span className="usage-count">{usage.length} mentions</span>
-            )}
+            </div>
           </div>
         </div>
 
@@ -105,7 +101,7 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
         </div>
       )}
 
-      {/* Quick Insert Actions */}
+      {/* Quick Insert Actions - Simplified */}
       <div className="character-quick-actions">
         <button
           className="quick-action-btn dialogue-btn"
@@ -132,15 +128,6 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
         >
           <Eye size={14} />
           Reference
-        </button>
-
-        <button
-          className="quick-action-btn view-btn"
-          onClick={onView}
-          title="View character details"
-        >
-          <Edit3 size={14} />
-          Edit
         </button>
       </div>
 
@@ -179,38 +166,6 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
         </div>
       )}
 
-      {/* Quick Dialogue Buttons */}
-      <div className="quick-dialogue-buttons">
-        <button
-          className="quick-dialogue-btn"
-          onClick={() => onInsertDialogue("...")}
-          title="Add pause"
-        >
-          ...
-        </button>
-        <button
-          className="quick-dialogue-btn"
-          onClick={() => onInsertDialogue("💭")}
-          title="Add thought"
-        >
-          💭
-        </button>
-        <button
-          className="quick-dialogue-btn"
-          onClick={() => onInsertDialogue("*sigh*")}
-          title="Add sigh"
-        >
-          *sigh*
-        </button>
-        <button
-          className="quick-dialogue-btn"
-          onClick={() => onInsertDialogue("*nods*")}
-          title="Add action"
-        >
-          *nods*
-        </button>
-      </div>
-
       {/* Usage Information */}
       {isExpanded && usage.length > 0 && (
         <div className="character-usage">
@@ -219,11 +174,13 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
             {usage.slice(0, 3).map((use, index) => (
               <div key={index} className="usage-item">
                 <span className="usage-file">{use.title}</span>
-                <span className="usage-type">{use.usageType}</span>
+                <span className="usage-mentions">{use.mentions} times</span>
               </div>
             ))}
             {usage.length > 3 && (
-              <div className="usage-more">+{usage.length - 3} more...</div>
+              <div className="usage-more">
+                +{usage.length - 3} more files...
+              </div>
             )}
           </div>
         </div>
