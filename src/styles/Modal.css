@@ -181,13 +181,221 @@
   }
 }
 
-.form-row {
-  display: flex;
-  gap: 1rem;
+
+/* ========================================
+   LOCATION MODAL SPECIFIC STYLES
+   ======================================== */
+
+.location-modal {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px; /* กว้างขึ้นเพราะมี content เยอะ */
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.2s ease-out;
 }
 
-.color-input-group {
+/* Form Sections */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h4 {
+  color: #e6edf3;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.form-description {
+  color: #8b949e;
+  font-size: 0.85rem;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+/* Type Selector */
+.type-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.type-option {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.75rem;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #8b949e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.type-option:hover {
+  background: #30363d;
+  border-color: #3b82f6;
+  color: #e6edf3;
+}
+
+.type-option.selected {
+  background: #1e40af;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.type-option span {
+  font-weight: 500;
+}
+
+/* Form Row Layout */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Color Input Group */
+.color-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-input-group input[type="color"] {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-preview {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Form Group Override for Modal */
+.location-modal .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.location-modal .form-group label {
+  display: block;
+  color: #e6edf3;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.location-modal .form-group input,
+.location-modal .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.location-modal .form-group input:focus,
+.location-modal .form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.location-modal .form-group input::placeholder,
+.location-modal .form-group textarea::placeholder {
+  color: #6e7681;
+}
+
+.location-modal .form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.location-modal .form-group small {
+  display: block;
+  color: #8b949e;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  line-height: 1.3;
+}
+
+/* Checkbox Styling */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.checkbox-text {
+  color: #e6edf3;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Modal Title with Icon */
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .location-modal {
+    width: 95%;
+    max-width: none;
+    margin: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .type-selector {
+    grid-template-columns: 1fr;
+  }
+  
+  .color-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .color-preview {
+    min-width: auto;
+    width: 100%;
+  }
 }

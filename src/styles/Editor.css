@@ -422,3 +422,34 @@
 .editor-tab.drop-target {
   border-left: 3px solid #58a6ff;
 }
+
+/* ===== LOCATION TABS (PURPLE) ===== */
+.editor-tab.location {
+  border-top: 3px solid var(--location-color);
+  background: linear-gradient(to bottom, var(--location-bg), #21262d);
+}
+
+.editor-tab.location.active {
+  background: linear-gradient(to bottom, var(--location-bg), #161b22);
+  border-left-color: var(--location-color);
+  border-right-color: var(--location-color);
+}
+
+.editor-tab.location:hover {
+  background: linear-gradient(to bottom, var(--location-bg), #161b22);
+}
+
+.editor-tab.location .modified-indicator {
+  color: var(--location-color);
+}
+
+.editor-tab.location .tab-icon {
+  color: var(--location-color);
+}
+
+/* ===== FILE TYPE BADGE LOCATION ===== */
+.file-type-badge.location-theme {
+  background: var(--location-bg);
+  border-color: var(--location-color);
+  color: var(--location-color);
+}

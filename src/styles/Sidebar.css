@@ -288,3 +288,32 @@
 .sidebar-item {
   animation: item-add 0.2s ease-out;
 }
+
+.sidebar-section.locations {
+  border-left: 3px solid var(--location-color);
+  padding-left: 12px;
+}
+
+.sidebar-section.locations .section-title h3 {
+  color: var(--location-color);
+}
+
+.sidebar-section.locations .add-icon-btn:hover {
+  color: var(--location-color);
+  background: var(--location-bg);
+}
+
+.sidebar-section.locations .add-button:hover {
+  border-color: var(--location-color);
+  color: var(--location-color);
+  background: var(--location-bg);
+}
+
+.sidebar-section.locations .sidebar-item:hover {
+  background-color: var(--location-bg);
+  border-left: 2px solid var(--location-color);
+}
+
+.sidebar-section.locations .sidebar-item:focus {
+  outline-color: var(--location-color);
+}

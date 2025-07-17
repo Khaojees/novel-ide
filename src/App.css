@@ -10,6 +10,7 @@
   --character-bg: #10b98115;
   --chapter-bg: #3b82f615;
   --idea-bg: #f59e0b15;
+  --location-color: #a855f7;
   
   /* เพิ่ม common variables */
   --bg-primary: #0d1117;
@@ -19,11 +20,13 @@
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
+  --location-bg: #a855f715;
 }
 
 .character-theme { color: var(--character-color); }
 .chapter-theme { color: var(--chapter-color); }
 .idea-theme { color: var(--idea-color); }
+.location-theme { color: var(--location-color); }
 
 /* Import all component styles */
 @import './styles/globals.css';
