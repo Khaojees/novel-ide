@@ -1,4 +1,4 @@
-// src/components/LocationPanel/LocationPanel.tsx - Simplified Version
+// src/components/LocationPanel/LocationPanel.tsx - Updated with Insert button
 import React, { useState, useMemo } from "react";
 import {
   Search,
@@ -19,13 +19,12 @@ interface LocationPanelProps {}
 const LocationPanel: React.FC<LocationPanelProps> = () => {
   const { locations, addLocation, getLocationUsage, openLocationTab } =
     useProjectStore();
-
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [pinnedLocations, setPinnedLocations] = useState<Set<string>>(
     new Set()
   );
 
-  // Filter locations based on search and pinned status
+  // Filter locations based on search
   const filteredLocations = useMemo(() => {
     if (!locations) return [];
 
@@ -61,9 +60,9 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     });
   };
 
+  // ฟังก์ชันใหม่สำหรับส่ง location ref ไป editor
   const handleInsertLocation = (location: Location) => {
-    // Send custom event to editor for location insertion
-    const event = new CustomEvent("insertLocationTag", {
+    const event = new CustomEvent("insertLocationRef", {
       detail: { locationId: location.id },
     });
     window.dispatchEvent(event);
@@ -100,20 +99,17 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     <div className="location-panel">
       {/* Header */}
       <div className="panel-header">
-        <div className="header-title">
-          <MapPin size={18} />
-          <span>Locations</span>
+        <div className="panel-title">
+          <MapPin size={20} />
+          <h3>Locations</h3>
         </div>
-        <div className="header-actions">
-          <span className="location-count">{locations?.length || 0}</span>
-          <button
-            className="add-btn"
-            onClick={handleQuickAdd}
-            title="Add new location"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
+        <button
+          className="add-btn"
+          onClick={handleQuickAdd}
+          title="Quick add location"
+        >
+          <Plus size={16} />
+        </button>
       </div>
 
       {/* Search */}
@@ -128,25 +124,11 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
         />
       </div>
 
-      {/* Locations List */}
-      <div className="locations-list">
+      {/* Location List */}
+      <div className="location-list">
         {filteredLocations.length === 0 ? (
           <div className="empty-state">
-            <MapPin size={48} className="empty-icon" />
             <p>No locations found</p>
-            {searchQuery ? (
-              <button
-                className="clear-search-btn"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </button>
-            ) : (
-              <button className="clear-search-btn" onClick={handleQuickAdd}>
-                <Plus size={16} />
-                Add location
-              </button>
-            )}
           </div>
         ) : (
           filteredLocations.map((location) => (
@@ -176,7 +158,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
 };
 
 // ========================================
-// SIMPLIFIED LOCATION ITEM COMPONENT
+// LOCATION ITEM COMPONENT
 // ========================================
 
 interface LocationItemProps {
@@ -227,6 +209,11 @@ const LocationItem: React.FC<LocationItemProps> = ({
     onView();
   };
 
+  const handleInsertClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsert();
+  };
+
   return (
     <div
       className={`location-item ${isPinned ? "pinned" : ""} ${
@@ -240,7 +227,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
         >
           <span
             className="location-icon"
-            style={{ color: location.color || "#ef4444" }}
+            style={{ color: location.color || "#a855f7" }}
           >
             {getLocationIcon()}
           </span>
@@ -270,73 +257,44 @@ const LocationItem: React.FC<LocationItemProps> = ({
             onClick={onTogglePin}
             title={isPinned ? "Unpin location" : "Pin location"}
           >
-            {isPinned ? <Pin size={14} /> : <PinOff size={14} />}
+            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
           </button>
         </div>
       </div>
 
-      {/* Description */}
-      {location.description && isExpanded && (
-        <div className="location-description">
-          {location.description.length > 150
-            ? `${location.description.substring(0, 150)}...`
-            : location.description}
-        </div>
-      )}
-
-      {/* Hierarchy */}
-      {location.parentLocation && isExpanded && (
-        <div className="location-hierarchy">
-          <span className="hierarchy-label">Part of:</span>
-          <span className="parent-location">{location.parentLocation}</span>
-        </div>
-      )}
-
-      {/* Display Names */}
-      {isExpanded && (location.names?.full || location.names?.description) && (
-        <div className="location-names">
-          {location.names?.full && (
-            <div className="name-item">
-              <strong>Full name:</strong> {location.names.full}
-            </div>
-          )}
-          {location.names?.description && (
-            <div className="name-item">
-              <strong>Descriptive:</strong> {location.names.description}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Simplified Quick Actions - Only Insert */}
-      <div className="location-quick-actions">
+      {/* Insert Button - แยกออกมาให้เห็นชัด */}
+      <div className="location-insert">
         <button
-          className="quick-action-btn insert-btn"
-          onClick={onInsert}
-          title="Insert location in text"
+          className="insert-btn"
+          onClick={handleInsertClick}
+          title={`Insert ${getDisplayName()} reference`}
         >
-          <MapPin size={14} />
-          Insert
+          <span className="insert-icon">@</span>
+          Insert {getDisplayName()}
         </button>
       </div>
 
-      {/* Usage Information */}
-      {isExpanded && usage.length > 0 && (
-        <div className="location-usage">
-          <h5>Used in:</h5>
-          <div className="usage-list">
-            {usage.slice(0, 3).map((use, index) => (
-              <div key={index} className="usage-item">
-                <span className="usage-file">{use.title}</span>
-                <span className="usage-mentions">{use.mentions} times</span>
-              </div>
-            ))}
-            {usage.length > 3 && (
-              <div className="usage-more">
-                +{usage.length - 3} more files...
-              </div>
-            )}
-          </div>
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="location-expanded">
+          {location.description && (
+            <div className="location-description">
+              <strong>Description:</strong>
+              <p>{location.description}</p>
+            </div>
+          )}
+          {location.names?.full && (
+            <div className="location-full-name">
+              <strong>Full name:</strong>
+              <p>{location.names.full}</p>
+            </div>
+          )}
+          {location.parentLocation && (
+            <div className="location-parent">
+              <strong>Part of:</strong>
+              <p>{location.parentLocation}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -578,3 +578,85 @@ export const cleanupNodes = (nodes: ContentNode[]): ContentNode[] => {
     return true;
   });
 };
+
+// Helper functions สำหรับแปลง HTML <-> ContentNode[]
+
+export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
+  // สร้าง temp div เพื่อ parse HTML
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = htmlContent;
+
+  const nodes: ContentNode[] = [];
+
+  // วน loop เอา child nodes
+  tempDiv.childNodes.forEach((node, index) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const textContent = node.textContent?.trim();
+      if (textContent) {
+        nodes.push({
+          id: `text-${Date.now()}-${index}`,
+          type: "text",
+          content: textContent,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as Element;
+
+      if (element.tagName === "CHAR-REF") {
+        const characterId = element.getAttribute("id") || "";
+        const content = element.textContent || "";
+        nodes.push({
+          id: `char-${Date.now()}-${index}`,
+          type: "character",
+          characterId,
+          content,
+          context: "narrative", // default context
+          createdAt: new Date().toISOString(),
+        });
+      } else if (element.tagName === "LOC-REF") {
+        const locationId = element.getAttribute("id") || "";
+        const content = element.textContent || "";
+        nodes.push({
+          id: `loc-${Date.now()}-${index}`,
+          type: "location",
+          locationId,
+          content,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (element.tagName === "BR") {
+        nodes.push({
+          id: `br-${Date.now()}-${index}`,
+          type: "linebreak",
+          content: "",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  });
+
+  return nodes;
+}
+
+export function convertContentNodesToHtml(nodes: ContentNode[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.type) {
+        case "text":
+          return node.content;
+        case "character":
+          return `<char-ref id="${(node as any).characterId}">${
+            node.content
+          }</char-ref>`;
+        case "location":
+          return `<loc-ref id="${(node as any).locationId}">${
+            node.content
+          }</loc-ref>`;
+        case "linebreak":
+          return "<br>";
+        default:
+          return "";
+      }
+    })
+    .join("");
+}

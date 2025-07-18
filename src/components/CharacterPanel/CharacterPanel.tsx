@@ -1,31 +1,26 @@
-// src/components/CharacterPanel/CharacterPanel.tsx - Complete Fixed Version
+// src/components/CharacterPanel/CharacterPanel.tsx - Updated for new editor
 import React, { useState, useMemo } from "react";
-import { Search, User, Plus } from "lucide-react";
-import { useProjectStore } from "../../store/projectStore";
-import { CharacterContext } from "../../types/structured";
+import { Search, Pin, PinOff, User, Plus } from "lucide-react";
 import { Character } from "../../types";
-import { CharacterItem } from "./CharacterItem";
+import { useProjectStore } from "../../store/projectStore";
 
 interface CharacterPanelProps {}
 
 const CharacterPanel: React.FC<CharacterPanelProps> = () => {
-  const { characters, getCharacterUsage, openCharacterTab, addCharacter } =
-    useProjectStore();
-
+  const { characters, addCharacter, openCharacterTab } = useProjectStore();
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [dialogueInputs, setDialogueInputs] = useState<Record<string, string>>(
-    {}
-  );
   const [pinnedCharacters, setPinnedCharacters] = useState<Set<string>>(
     new Set()
   );
 
-  // Filter characters based on search and pinned status
+  // Filter characters based on search
   const filteredCharacters = useMemo(() => {
+    if (!characters) return [];
+
     let filtered = characters.filter(
-      (char) =>
-        char.active &&
-        char.name.toLowerCase().includes(searchQuery.toLowerCase())
+      (character) =>
+        character.active &&
+        character.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Show pinned characters first
@@ -42,58 +37,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     setSearchQuery(event.target.value);
   };
 
-  const handleDialogueInputChange = (characterId: string, value: string) => {
-    setDialogueInputs((prev) => ({
-      ...prev,
-      [characterId]: value,
-    }));
-  };
-
-  const handleAddDialogue = (character: Character) => {
-    const dialogue = dialogueInputs[character.id]?.trim();
-    if (!dialogue) return;
-
-    // Send custom event to structured editor for dialogue insertion
-    const event = new CustomEvent("insertDialogue", {
-      detail: {
-        characterId: character.id,
-        text: dialogue,
-        context: "dialogue" as CharacterContext,
-      },
-    });
-    window.dispatchEvent(event);
-
-    // Clear the input
-    setDialogueInputs((prev) => ({
-      ...prev,
-      [character.id]: "",
-    }));
-  };
-
-  const handleInsertCharacter = (
-    character: Character,
-    context: CharacterContext
-  ) => {
-    // Send custom event to structured editor for character insertion
-    const event = new CustomEvent("insertCharacterTag", {
-      detail: {
-        characterId: character.id,
-        context: context,
-      },
-    });
-    window.dispatchEvent(event);
-  };
-
-  const handleKeyPress = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>,
-    character: Character
-  ) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleAddDialogue(character);
-    }
-  };
-
   const handleTogglePin = (characterId: string) => {
     setPinnedCharacters((prev) => {
       const newSet = new Set(prev);
@@ -106,15 +49,21 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     });
   };
 
+  // ฟังก์ชันใหม่สำหรับส่ง character ref ไป editor
+  const handleInsertCharacter = (character: Character) => {
+    const event = new CustomEvent("insertCharacterRef", {
+      detail: { characterId: character.id },
+    });
+    window.dispatchEvent(event);
+  };
+
   const handleOpenCharacter = (character: Character) => {
-    // Use openCharacterTab with Character object
     if (openCharacterTab) {
       openCharacterTab(character);
     }
   };
 
-  const handleAddCharacter = async () => {
-    // Simple add character - you might want to make this more sophisticated
+  const handleQuickAdd = async () => {
     const name = prompt("Character name:");
     if (!name?.trim()) return;
 
@@ -124,6 +73,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
           name: name.trim(),
           traits: "",
           bio: "",
+          appearance: "",
           active: true,
         });
       }
@@ -137,20 +87,17 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     <div className="character-panel">
       {/* Header */}
       <div className="panel-header">
-        <div className="header-title">
-          <User size={18} />
-          <span>Characters</span>
+        <div className="panel-title">
+          <User size={20} />
+          <h3>Characters</h3>
         </div>
-        <div className="header-actions">
-          <span className="character-count">{characters.length}</span>
-          <button
-            className="add-btn"
-            onClick={handleAddCharacter}
-            title="Add new character"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
+        <button
+          className="add-btn"
+          onClick={handleQuickAdd}
+          title="Quick add character"
+        >
+          <Plus size={16} />
+        </button>
       </div>
 
       {/* Search */}
@@ -165,20 +112,11 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
         />
       </div>
 
-      {/* Characters List */}
-      <div className="characters-list">
+      {/* Character List */}
+      <div className="character-list">
         {filteredCharacters.length === 0 ? (
           <div className="empty-state">
-            <User size={48} className="empty-icon" />
             <p>No characters found</p>
-            {searchQuery && (
-              <button
-                className="clear-search-btn"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear search
-              </button>
-            )}
           </div>
         ) : (
           filteredCharacters.map((character) => (
@@ -187,24 +125,8 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
               character={character}
               isPinned={pinnedCharacters.has(character.id)}
               onTogglePin={() => handleTogglePin(character.id)}
-              onInsertDialogue={(text) => {
-                // Update the dialogue input and trigger add
-                setDialogueInputs((prev) => ({
-                  ...prev,
-                  [character.id]: text,
-                }));
-                handleAddDialogue(character);
-              }}
-              onInsertCharacter={(context) =>
-                handleInsertCharacter(character, context)
-              }
+              onInsert={() => handleInsertCharacter(character)}
               onView={() => handleOpenCharacter(character)}
-              dialogueInput={dialogueInputs[character.id] || ""}
-              onDialogueInputChange={(value) =>
-                handleDialogueInputChange(character.id, value)
-              }
-              onKeyPress={(e) => handleKeyPress(e, character)}
-              usage={getCharacterUsage ? getCharacterUsage(character.id) : []}
             />
           ))
         )}
@@ -218,6 +140,112 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
           <span>{pinnedCharacters.size} pinned</span>
         </div>
       </div>
+    </div>
+  );
+};
+
+// ========================================
+// CHARACTER ITEM COMPONENT
+// ========================================
+
+interface CharacterItemProps {
+  character: Character;
+  isPinned: boolean;
+  onTogglePin: () => void;
+  onInsert: () => void;
+  onView: () => void;
+}
+
+const CharacterItem: React.FC<CharacterItemProps> = ({
+  character,
+  isPinned,
+  onTogglePin,
+  onInsert,
+  onView,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleCharacterClick = () => {
+    // คลิกที่ชื่อตัวละครเพื่อเปิด tab
+    onView();
+  };
+
+  const handleInsertClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsert();
+  };
+
+  return (
+    <div
+      className={`character-item ${isPinned ? "pinned" : ""} ${
+        isExpanded ? "expanded" : ""
+      }`}
+    >
+      <div className="character-header">
+        <div
+          className="character-info"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="character-avatar">
+            {character.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="character-details">
+            <h4
+              className="character-name"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCharacterClick();
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              {character.name}
+            </h4>
+            {character.traits && (
+              <p className="character-traits">{character.traits}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="character-actions">
+          <button
+            className={`pin-btn ${isPinned ? "pinned" : ""}`}
+            onClick={onTogglePin}
+            title={isPinned ? "Unpin character" : "Pin character"}
+          >
+            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Insert Button - แยกออกมาให้เห็นชัด */}
+      <div className="character-insert">
+        <button
+          className="insert-btn"
+          onClick={handleInsertClick}
+          title={`Insert ${character.name} reference`}
+        >
+          <span className="insert-icon">@</span>
+          Insert {character.name}
+        </button>
+      </div>
+
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="character-expanded">
+          {character.bio && (
+            <div className="character-bio">
+              <strong>Bio:</strong>
+              <p>{character.bio}</p>
+            </div>
+          )}
+          {character.appearance && (
+            <div className="character-appearance">
+              <strong>Appearance:</strong>
+              <p>{character.appearance}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

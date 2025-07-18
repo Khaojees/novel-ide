@@ -8,6 +8,10 @@ import { Character, Tab } from "../../types";
 import { Location, ContentNode } from "../../types/structured";
 import LocationEditor from "./LocationEditor";
 import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
+import {
+  convertContentNodesToHtml,
+  convertHtmlToContentNodes,
+} from "../../utils/contentUtils";
 
 const Editor: React.FC = () => {
   const {
@@ -84,22 +88,25 @@ const Editor: React.FC = () => {
 
   // Handle content change for chapters
   const handleChapterContentChange = useCallback(
-    (nodes: ContentNode[]) => {
+    (htmlContent: string) => {
       if (!currentChapter) return;
 
-      // เก็บ nodes ล่าสุด
+      // แปลง HTML string เป็น ContentNode[] สำหรับ save
+      const nodes = convertHtmlToContentNodes(htmlContent);
+
+      // เก็บ HTML content ล่าสุด
       setLatestChapterContent((prev) => ({
         ...prev,
-        [currentChapter.id]: nodes,
+        [currentChapter.id]: nodes, // หรือเก็บ htmlContent ถ้าต้องการ
       }));
 
       // เช็คว่า content เปลี่ยนจริงๆ หรือเปล่า
-      const isActuallyModified =
-        JSON.stringify(nodes) !== JSON.stringify(currentChapter.content);
+      const originalHtml = convertContentNodesToHtml(currentChapter.content);
+      const isActuallyModified = htmlContent !== originalHtml;
 
       setContentModified((prev) => ({
         ...prev,
-        [currentChapter.id]: isActuallyModified, // <-- แก้ตรงนี้
+        [currentChapter.id]: isActuallyModified,
       }));
     },
     [currentChapter]

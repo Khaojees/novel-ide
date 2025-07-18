@@ -1,37 +1,16 @@
 // src/components/Editor/StructuredEditor.tsx
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  ContentNode,
-  CharacterNode,
-  LocationNode,
-  TextNode,
-  StructuredChapter,
-  CharacterContext,
-  AutocompleteItem,
-  Location,
-} from "../../types/structured";
-import {
-  createTextNode,
-  createCharacterNode,
-  createLocationNode,
-  insertNodeAt,
-  updateNode,
-  renderNodesToText,
-} from "../../utils/contentUtils";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Character } from "../../types";
-import { AutocompleteDropdown } from "./AutocompleteDropdown";
-import { TextSpan } from "./TextSpan";
-import { LocationTag } from "./LocationTag";
-import { CharacterTag } from "./CharacterTag";
+import { Location, StructuredChapter } from "../../types/structured";
+import { Save, Trash2, RotateCcw } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
-import { RotateCcw, Save, Trash2 } from "lucide-react";
 
 interface StructuredEditorProps {
   chapter: StructuredChapter;
   characters: Character[];
   locations: Location[];
-  onContentChange: (nodes: ContentNode[]) => void;
+  onContentChange: (htmlContent: string) => void;
   onSave: () => void;
   isModified: boolean;
 }
@@ -44,327 +23,397 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   onSave,
   isModified,
 }) => {
-  const [nodes, setNodes] = useState<ContentNode[]>(chapter.content);
-  const [cursorPosition, setCursorPosition] = useState<number>(0);
-  const [showAutocomplete, setShowAutocomplete] = useState<boolean>(false);
-  const [autocompleteQuery, setAutocompleteQuery] = useState<string>("");
-  const [autocompletePosition, setAutocompletePosition] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
-
   const editorRef = useRef<HTMLDivElement>(null);
+  // Fix: เปลี่ยนจาก ContentNode[] เป็น string
+  const [lastHtml, setLastHtml] = useState<string>("");
   const { deleteChapter } = useProjectStore();
   const confirm = useConfirm();
 
-  // Update nodes when chapter changes
+  // Register custom elements for character and location references
   useEffect(() => {
-    setNodes(chapter.content);
-  }, [chapter.content]);
+    // Character reference element
+    if (!customElements.get("char-ref")) {
+      customElements.define(
+        "char-ref",
+        class extends HTMLElement {
+          connectedCallback() {
+            this.contentEditable = "false";
+            this.style.cssText = `
+            display: inline;
+            background: var(--character-color, #10b981);
+            color: white;
+            padding: 2px 6px;
+            margin: 0 1px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            font-size: inherit;
+            line-height: inherit;
+          `;
 
-  // Notify parent of changes
-  useEffect(() => {
-    onContentChange(nodes);
-  }, [nodes, onContentChange]);
+            // Add hover effect
+            this.addEventListener("mouseenter", () => {
+              this.style.transform = "translateY(-1px)";
+              this.style.boxShadow = "0 2px 8px rgba(16, 185, 129, 0.3)";
+            });
 
-  // Handle keyboard shortcuts
+            this.addEventListener("mouseleave", () => {
+              this.style.transform = "translateY(0)";
+              this.style.boxShadow = "none";
+            });
+          }
+        }
+      );
+    }
+
+    // Location reference element
+    if (!customElements.get("loc-ref")) {
+      customElements.define(
+        "loc-ref",
+        class extends HTMLElement {
+          connectedCallback() {
+            this.contentEditable = "false";
+            this.style.cssText = `
+            display: inline;
+            background: var(--location-color, #a855f7);
+            color: white;
+            padding: 2px 6px;
+            margin: 0 1px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            font-size: inherit;
+            line-height: inherit;
+          `;
+
+            // Add hover effect
+            this.addEventListener("mouseenter", () => {
+              this.style.transform = "translateY(-1px)";
+              this.style.boxShadow = "0 2px 8px rgba(168, 85, 247, 0.3)";
+            });
+
+            this.addEventListener("mouseleave", () => {
+              this.style.transform = "translateY(0)";
+              this.style.boxShadow = "none";
+            });
+          }
+        }
+      );
+    }
+  }, []);
+
+  // Handle content changes
+  const handleInput = useCallback(() => {
+    if (!editorRef.current) return;
+
+    const htmlContent = editorRef.current.innerHTML;
+    if (htmlContent !== lastHtml) {
+      setLastHtml(htmlContent);
+      onContentChange(htmlContent);
+    }
+  }, [lastHtml, onContentChange]);
+
+  // Update refs when character/location names change
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    if (!editorRef.current) return;
+
+    let updated = false;
+
+    // Update character refs
+    const charRefs = editorRef.current.querySelectorAll("char-ref");
+    charRefs.forEach((ref) => {
+      const charId = ref.getAttribute("id");
+      const character = characters.find((c) => c.id === charId);
+      if (character && ref.textContent !== character.name) {
+        ref.textContent = character.name;
+        updated = true;
+      }
+    });
+
+    // Update location refs
+    const locRefs = editorRef.current.querySelectorAll("loc-ref");
+    locRefs.forEach((ref) => {
+      const locId = ref.getAttribute("id");
+      const location = locations.find((l) => l.id === locId);
+      if (location && ref.textContent !== location.name) {
+        ref.textContent = location.name;
+        updated = true;
+      }
+    });
+
+    // If refs were updated, notify parent
+    if (updated) {
+      handleInput();
+    }
+  }, [characters, locations, handleInput]);
+
+  // Handle keyboard events
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const selection = window.getSelection();
+      if (!selection || !selection.anchorNode) return;
+
+      // Handle Backspace/Delete for ref deletion
+      if (e.key === "Backspace" || e.key === "Delete") {
+        const range = selection.getRangeAt(0);
+        const { startContainer, startOffset } = range;
+
+        // Check if cursor is right after a ref element
+        if (e.key === "Backspace" && startOffset === 0) {
+          const previousSibling = startContainer.previousSibling;
+          if (
+            previousSibling &&
+            (previousSibling.nodeName === "CHAR-REF" ||
+              previousSibling.nodeName === "LOC-REF")
+          ) {
+            e.preventDefault();
+            previousSibling.remove();
+            handleInput();
+            return;
+          }
+        }
+
+        // Check if cursor is right before a ref element (for Delete key)
+        if (e.key === "Delete") {
+          const nextSibling = startContainer.nextSibling;
+          if (
+            nextSibling &&
+            (nextSibling.nodeName === "CHAR-REF" ||
+              nextSibling.nodeName === "LOC-REF")
+          ) {
+            e.preventDefault();
+            nextSibling.remove();
+            handleInput();
+            return;
+          }
+        }
+
+        // If selection includes ref elements, delete them
+        if (!range.collapsed) {
+          const contents = range.extractContents();
+          const refElements = contents.querySelectorAll("char-ref, loc-ref");
+          if (refElements.length > 0) {
+            e.preventDefault();
+            range.deleteContents();
+            handleInput();
+            return;
+          }
+        }
+      }
+
+      // Ctrl+S to save
       if (e.ctrlKey && e.key === "s") {
         e.preventDefault();
         onSave();
       }
-    };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
-
-  // Insert character tag at cursor position
-  const insertCharacterTag = useCallback(
-    (characterId: string, context: CharacterContext) => {
-      const newNode = createCharacterNode(characterId, context);
-      const newNodes = insertNodeAt(nodes, cursorPosition, newNode);
-      setNodes(newNodes);
-      setCursorPosition(cursorPosition + 1);
-      setShowAutocomplete(false);
+      // Prevent editing inside ref elements
+      const activeElement = document.activeElement;
+      if (
+        activeElement &&
+        (activeElement.tagName === "CHAR-REF" ||
+          activeElement.tagName === "LOC-REF")
+      ) {
+        e.preventDefault();
+      }
     },
-    [nodes, cursorPosition]
+    [handleInput, onSave]
   );
 
-  // Insert location tag at cursor position
-  const insertLocationTag = useCallback(
+  // Insert character reference at cursor
+  const insertCharacterRef = useCallback(
+    (characterId: string) => {
+      const character = characters.find((c) => c.id === characterId);
+      if (!character || !editorRef.current) return;
+
+      editorRef.current.focus();
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      const charRef = document.createElement("char-ref");
+      charRef.setAttribute("id", characterId);
+      charRef.textContent = character.name;
+
+      range.deleteContents();
+      range.insertNode(charRef);
+
+      // Move cursor after the ref
+      range.setStartAfter(charRef);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      handleInput();
+    },
+    [characters, handleInput]
+  );
+
+  // Insert location reference at cursor
+  const insertLocationRef = useCallback(
     (locationId: string) => {
-      const newNode = createLocationNode(locationId);
-      const newNodes = insertNodeAt(nodes, cursorPosition, newNode);
-      setNodes(newNodes);
-      setCursorPosition(cursorPosition + 1);
-      setShowAutocomplete(false);
+      const location = locations.find((l) => l.id === locationId);
+      if (!location || !editorRef.current) return;
+
+      editorRef.current.focus();
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      const locRef = document.createElement("loc-ref");
+      locRef.setAttribute("id", locationId);
+      locRef.textContent = location.name;
+
+      range.deleteContents();
+      range.insertNode(locRef);
+
+      // Move cursor after the ref
+      range.setStartAfter(locRef);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      handleInput();
     },
-    [nodes, cursorPosition]
+    [locations, handleInput]
   );
 
-  // Insert text at cursor position
-  const insertText = useCallback(
-    (text: string) => {
-      const newNode = createTextNode(text);
-      const newNodes = insertNodeAt(nodes, cursorPosition, newNode);
-      setNodes(newNodes);
-      setCursorPosition(cursorPosition + 1);
-    },
-    [nodes, cursorPosition]
-  );
-
-  // Handle @ symbol for autocomplete
-  const handleAtSymbol = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === "@") {
-      const rect = editorRef.current?.getBoundingClientRect();
-      if (rect) {
-        // Get cursor position relative to editor
-        const selection = window.getSelection();
-        let x = 0;
-        let y = 0;
-
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const rangeRect = range.getBoundingClientRect();
-          x = rangeRect.left - rect.left;
-          y = rangeRect.top - rect.top + 20;
-        } else {
-          // Fallback to center of editor if no selection
-          x = rect.width / 2;
-          y = 100;
-        }
-
-        setAutocompletePosition({ x, y });
-        setShowAutocomplete(true);
-        setAutocompleteQuery("");
-      }
-    }
-  }, []);
-
-  // Get autocomplete suggestions
-  const getAutocompleteSuggestions = useCallback((): AutocompleteItem[] => {
-    const suggestions: AutocompleteItem[] = [];
-
-    // Add characters
-    characters
-      .filter(
-        (char) =>
-          char.active &&
-          char.name.toLowerCase().includes(autocompleteQuery.toLowerCase())
-      )
-      .forEach((char) => {
-        suggestions.push({
-          id: char.id,
-          name: char.name,
-          type: "character",
-          description: char.bio?.substring(0, 50) + "...",
-        });
-      });
-
-    // Add locations
-    locations
-      .filter(
-        (loc) =>
-          loc.active &&
-          loc.name.toLowerCase().includes(autocompleteQuery.toLowerCase())
-      )
-      .forEach((loc) => {
-        suggestions.push({
-          id: loc.id,
-          name: loc.name,
-          type: "location",
-          description: loc.description?.substring(0, 50) + "...",
-        });
-      });
-
-    return suggestions.slice(0, 10); // Limit to 10 suggestions
-  }, [characters, locations, autocompleteQuery]);
-
-  // Handle autocomplete selection
-  const handleAutocompleteSelect = useCallback(
-    (item: AutocompleteItem, context?: CharacterContext) => {
-      if (item.type === "character") {
-        insertCharacterTag(item.id, context || "narrative");
-      } else if (item.type === "location") {
-        insertLocationTag(item.id);
-      }
-    },
-    [insertCharacterTag, insertLocationTag]
-  );
-
-  // Listen for events from CharacterPanel and LocationPanel
+  // Listen to custom events from character/location panels
   useEffect(() => {
-    const handleInsertDialogue = (event: CustomEvent) => {
-      const { characterId, text } = event.detail;
-
-      // Insert character tag for dialogue
-      insertCharacterTag(characterId, "dialogue");
-
-      // Insert dialogue text
-      if (text) {
-        insertText(`"${text}"`);
-      }
+    const handleInsertCharacter = (e: CustomEvent) => {
+      insertCharacterRef(e.detail.characterId);
     };
 
-    const handleInsertCharacterTag = (event: CustomEvent) => {
-      const { characterId, context } = event.detail;
-      insertCharacterTag(characterId, context);
+    const handleInsertLocation = (e: CustomEvent) => {
+      insertLocationRef(e.detail.locationId);
     };
 
-    const handleInsertLocationTag = (event: CustomEvent) => {
-      const { locationId } = event.detail;
-      insertLocationTag(locationId);
-    };
-
+    // Listen to events from panels
     window.addEventListener(
-      "insertDialogue",
-      handleInsertDialogue as EventListener
+      "insertCharacterRef",
+      handleInsertCharacter as EventListener
     );
     window.addEventListener(
-      "insertCharacterTag",
-      handleInsertCharacterTag as EventListener
+      "insertLocationRef",
+      handleInsertLocation as EventListener
     );
     window.addEventListener(
       "insertLocationTag",
-      handleInsertLocationTag as EventListener
-    );
+      handleInsertLocation as EventListener
+    ); // legacy support
 
     return () => {
       window.removeEventListener(
-        "insertDialogue",
-        handleInsertDialogue as EventListener
+        "insertCharacterRef",
+        handleInsertCharacter as EventListener
       );
       window.removeEventListener(
-        "insertCharacterTag",
-        handleInsertCharacterTag as EventListener
+        "insertLocationRef",
+        handleInsertLocation as EventListener
       );
       window.removeEventListener(
         "insertLocationTag",
-        handleInsertLocationTag as EventListener
+        handleInsertLocation as EventListener
       );
     };
-  }, [insertCharacterTag, insertLocationTag, insertText]);
+  }, [insertCharacterRef, insertLocationRef]);
 
-  // Render individual node
-  const renderNode = (node: ContentNode, index: number) => {
-    const isActive = index === cursorPosition;
+  // Set initial content
+  useEffect(() => {
+    if (editorRef.current) {
+      // Fix: convert ContentNode[] to HTML string
+      let htmlContent = "";
 
-    switch (node.type) {
-      case "character":
-        return (
-          <CharacterTag
-            key={node.id}
-            node={node as CharacterNode}
-            character={characters.find((c) => c.id === node.characterId)}
-            isActive={isActive}
-            onClick={() => setCursorPosition(index)}
-            onEdit={() => openCharacterEditor(node.characterId)}
-          />
-        );
+      if (Array.isArray(chapter.content)) {
+        // Convert ContentNode[] to HTML
+        htmlContent = chapter.content
+          .map((node) => {
+            if (node.type === "text") return node.content;
+            if (node.type === "character")
+              return `<char-ref id="${node.characterId}">${node.content}</char-ref>`;
+            if (node.type === "location")
+              return `<loc-ref id="${node.locationId}">${node.content}</loc-ref>`;
+            return "";
+          })
+          .join("");
+      } else if (typeof chapter.content === "string") {
+        htmlContent = chapter.content;
+      }
 
-      case "location":
-        return (
-          <LocationTag
-            key={node.id}
-            node={node as LocationNode}
-            location={locations.find((l) => l.id === node.locationId)}
-            isActive={isActive}
-            onClick={() => setCursorPosition(index)}
-            onEdit={() => openLocationEditor(node.locationId)}
-          />
-        );
+      if (editorRef.current.innerHTML !== htmlContent) {
+        editorRef.current.innerHTML = htmlContent;
+        setLastHtml(htmlContent);
+      }
+    }
+  }, [chapter.content]);
 
-      case "text":
-        return (
-          <TextSpan
-            key={node.id}
-            node={node as TextNode}
-            isActive={isActive}
-            onClick={() => setCursorPosition(index)}
-            onTextChange={(newText) => {
-              const updatedNodes = updateNode(nodes, node.id, {
-                content: newText,
-              });
-              setNodes(updatedNodes);
-            }}
-            onKeyDown={handleAtSymbol}
-          />
-        );
+  const handleDiscardChanges = () => {
+    if (editorRef.current) {
+      // Fix: convert ContentNode[] to HTML
+      let originalContent = "";
 
-      case "linebreak":
-        return <br key={node.id} />;
+      if (Array.isArray(chapter.content)) {
+        originalContent = chapter.content
+          .map((node) => {
+            if (node.type === "text") return node.content;
+            if (node.type === "character")
+              return `<char-ref id="${node.characterId}">${node.content}</char-ref>`;
+            if (node.type === "location")
+              return `<loc-ref id="${node.locationId}">${node.content}</loc-ref>`;
+            return "";
+          })
+          .join("");
+      } else if (typeof chapter.content === "string") {
+        originalContent = chapter.content;
+      }
 
-      default:
-        return null;
+      editorRef.current.innerHTML = originalContent;
+      setLastHtml(originalContent);
+      onContentChange(originalContent);
     }
   };
 
-  const openCharacterEditor = (characterId: string) => {
-    // TODO: Implement character editor opening
-    console.log("Open character editor for:", characterId);
-  };
-
-  const openLocationEditor = (locationId: string) => {
-    // TODO: Implement location editor opening
-    console.log("Open location editor for:", locationId);
-  };
-
-  const handleDeleteChapter = useCallback(async () => {
-    const isConfirmed = await confirm({
+  const handleDeleteChapter = async () => {
+    const confirmed = await confirm({
       title: "Delete Chapter",
-      message: `Are you sure you want to delete "${chapter.metadata.title}"? This action cannot be undone.`,
+      message: `Are you sure you want to delete "${chapter.metadata.title}"?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
     });
 
-    if (isConfirmed && deleteChapter) {
+    if (confirmed && deleteChapter) {
       try {
-        const success = await deleteChapter(chapter.id);
-        if (success) {
-          // Chapter และ tab จะถูกปิดโดยอัตโนมัติใน store
-          console.log("Chapter deleted successfully!");
-        } else {
-          alert("Failed to delete chapter. Please try again.");
-        }
+        await deleteChapter(chapter.id);
       } catch (error) {
         console.error("Failed to delete chapter:", error);
         alert("Failed to delete chapter. Please try again.");
       }
     }
-  }, [confirm, deleteChapter, chapter.id, chapter.metadata.title]);
+  };
 
-  // Handle discard changes
-  const handleDiscardChanges = useCallback(async () => {
-    if (!isModified) return;
-
-    const isConfirmed = await confirm({
-      title: "Discard Changes",
-      message: "Are you sure you want to discard all unsaved changes?",
-    });
-
-    if (isConfirmed) {
-      // Reset to original content
-      setNodes(chapter.content);
-      setCursorPosition(0);
-    }
-  }, [confirm, isModified, chapter.content]);
+  // Count words for display
+  const getWordCount = () => {
+    if (!editorRef.current) return 0;
+    const text = editorRef.current.textContent || "";
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
+  };
 
   return (
     <div className="structured-editor">
       {/* Toolbar */}
       <div className="editor-toolbar">
-        <div className="toolbar-left"></div>
+        <div className="toolbar-left">
+          <h3>{chapter.metadata.title}</h3>
+        </div>
 
         <div className="toolbar-right">
-          <span className="word-count">
-            {
-              renderNodesToText(nodes, characters, locations).split(/\s+/)
-                .length
-            }{" "}
-            words
-          </span>
+          <span className="word-count">{getWordCount()} words</span>
 
-          {/* Save Button */}
           <button
             className={`save-btn ${isModified ? "modified" : ""}`}
             onClick={onSave}
@@ -374,23 +423,21 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
             {isModified ? "Save" : "Saved"}
           </button>
 
-          {/* Discard Button - แสดงเมื่อมีการแก้ไข */}
           {isModified && (
             <button
               className="discard-btn"
               onClick={handleDiscardChanges}
-              title="Discard all changes"
+              title="Discard changes"
             >
               <RotateCcw size={16} />
               Discard
             </button>
           )}
 
-          {/* Delete Button */}
           <button
             className="delete-btn"
             onClick={handleDeleteChapter}
-            title="Delete this chapter"
+            title="Delete chapter"
           >
             <Trash2 size={16} />
             Delete
@@ -402,33 +449,24 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       <div
         ref={editorRef}
         className="editor-content"
-        contentEditable={false}
-        onKeyDown={handleAtSymbol}
-        tabIndex={0}
-      >
-        {nodes.map((node, index) => renderNode(node, index))}
-
-        {/* Cursor */}
-        <span
-          className="cursor"
-          style={{
-            display: showAutocomplete ? "none" : "inline-block",
-          }}
-        >
-          |
-        </span>
-      </div>
-
-      {/* Autocomplete Dropdown */}
-      {showAutocomplete && (
-        <AutocompleteDropdown
-          position={autocompletePosition}
-          query={autocompleteQuery}
-          suggestions={getAutocompleteSuggestions()}
-          onSelect={handleAutocompleteSelect}
-          onClose={() => setShowAutocomplete(false)}
-        />
-      )}
+        contentEditable={true}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        style={{
+          flex: 1,
+          padding: "20px",
+          lineHeight: "1.8",
+          fontSize: "16px",
+          outline: "none",
+          background: "#0d1117",
+          color: "#e6edf3",
+          minHeight: "400px",
+          whiteSpace: "pre-wrap",
+          wordWrap: "break-word",
+        }}
+        suppressContentEditableWarning={true}
+        data-placeholder="Start writing your chapter here..."
+      />
     </div>
   );
 };
