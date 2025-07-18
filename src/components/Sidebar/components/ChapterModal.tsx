@@ -34,7 +34,7 @@ export const ChapterModal: React.FC<ChapterModalProps> = ({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Chapter 2 - The Journey Begins"
+              placeholder="Chapter 1 - The Journey Begins"
               required
               autoFocus
             />

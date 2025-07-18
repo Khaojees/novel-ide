@@ -93,9 +93,13 @@ const Editor: React.FC = () => {
         [currentChapter.id]: nodes,
       }));
 
+      // เช็คว่า content เปลี่ยนจริงๆ หรือเปล่า
+      const isActuallyModified =
+        JSON.stringify(nodes) !== JSON.stringify(currentChapter.content);
+
       setContentModified((prev) => ({
         ...prev,
-        [currentChapter.id]: true,
+        [currentChapter.id]: isActuallyModified, // <-- แก้ตรงนี้
       }));
     },
     [currentChapter]

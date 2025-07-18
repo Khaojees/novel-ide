@@ -346,8 +346,6 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       // Reset to original content
       setNodes(chapter.content);
       setCursorPosition(0);
-      // Force refresh if needed
-      window.location.reload();
     }
   }, [confirm, isModified, chapter.content]);
 
