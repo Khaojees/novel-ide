@@ -5,6 +5,7 @@ import { Location, StructuredChapter } from "../../types/structured";
 import { Save, Trash2, RotateCcw } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
+import { convertContentNodesToHtml } from "../../utils/contentUtils";
 
 interface StructuredEditorProps {
   chapter: StructuredChapter;
@@ -323,24 +324,17 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   // Set initial content
   useEffect(() => {
     if (editorRef.current) {
-      // Fix: convert ContentNode[] to HTML string
+      // ใช้ฟังก์ชัน convertContentNodesToHtml แทนการ manual map
       let htmlContent = "";
 
       if (Array.isArray(chapter.content)) {
-        // Convert ContentNode[] to HTML
-        htmlContent = chapter.content
-          .map((node) => {
-            if (node.type === "text") return node.content;
-            if (node.type === "character")
-              return `<char-ref id="${node.characterId}">${node.content}</char-ref>`;
-            if (node.type === "location")
-              return `<loc-ref id="${node.locationId}">${node.content}</loc-ref>`;
-            return "";
-          })
-          .join("");
+        // ใช้ฟังก์ชันที่มีอยู่แล้วแทนการ manual convert
+        htmlContent = convertContentNodesToHtml(chapter.content);
       } else if (typeof chapter.content === "string") {
         htmlContent = chapter.content;
       }
+
+      console.log("🔄 Setting initial content:", htmlContent);
 
       if (editorRef.current.innerHTML !== htmlContent) {
         editorRef.current.innerHTML = htmlContent;
@@ -351,23 +345,16 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
 
   const handleDiscardChanges = () => {
     if (editorRef.current) {
-      // Fix: convert ContentNode[] to HTML
+      // ใช้ฟังก์ชัน convertContentNodesToHtml แทนการ manual map
       let originalContent = "";
 
       if (Array.isArray(chapter.content)) {
-        originalContent = chapter.content
-          .map((node) => {
-            if (node.type === "text") return node.content;
-            if (node.type === "character")
-              return `<char-ref id="${node.characterId}">${node.content}</char-ref>`;
-            if (node.type === "location")
-              return `<loc-ref id="${node.locationId}">${node.content}</loc-ref>`;
-            return "";
-          })
-          .join("");
+        originalContent = convertContentNodesToHtml(chapter.content);
       } else if (typeof chapter.content === "string") {
         originalContent = chapter.content;
       }
+
+      console.log("🔄 Discarding to:", originalContent);
 
       editorRef.current.innerHTML = originalContent;
       setLastHtml(originalContent);

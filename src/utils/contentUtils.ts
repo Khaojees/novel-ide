@@ -580,83 +580,221 @@ export const cleanupNodes = (nodes: ContentNode[]): ContentNode[] => {
 };
 
 // Helper functions สำหรับแปลง HTML <-> ContentNode[]
-
 export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
-  // สร้าง temp div เพื่อ parse HTML
+  // console.log("🔍 HTML Input:", JSON.stringify(htmlContent));
+
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = htmlContent;
 
+  console.log("📋 tempDiv childNodes:", tempDiv.childNodes);
+
   const nodes: ContentNode[] = [];
 
-  // วน loop เอา child nodes
-  tempDiv.childNodes.forEach((node, index) => {
+  // ฟังก์ชันช่วยสำหรับ parse nodes recursively
+  const processNode = (
+    node: Node,
+    index: number,
+    parentType: string = "root",
+    isLast: boolean = false
+  ) => {
+    console.log(`📝 Processing ${parentType} node ${index}:`, {
+      nodeType: node.nodeType,
+      nodeName: node.nodeName,
+      textContent: node.textContent,
+      innerHTML: (node as any).innerHTML,
+    });
+
     if (node.nodeType === Node.TEXT_NODE) {
-      const textContent = node.textContent?.trim();
-      if (textContent) {
-        nodes.push({
-          id: `text-${Date.now()}-${index}`,
-          type: "text",
-          content: textContent,
-          createdAt: new Date().toISOString(),
-        });
-      }
+      const textContent = node.textContent || "";
+      console.log("📄 TEXT_NODE content:", JSON.stringify(textContent));
+
+      // แยก text ด้วย newlines แทนที่จะ trim ทิ้ง
+      const lines = textContent.split("\n");
+      console.log("📄 Split lines:", lines);
+
+      lines.forEach((line, lineIndex) => {
+        // เอาข้อความที่มีเนื้อหา (รวม whitespace) แต่ไม่เอาบรรทัดว่างเปล่า
+        if (line.length > 0) {
+          // เปลี่ยนจาก line.trim() เป็น line.length เพื่อ preserve spaces
+          const textNode = {
+            id: `text-${Date.now()}-${index}-${lineIndex}-${Math.random()}`,
+            type: "text" as const,
+            content: line,
+            createdAt: new Date().toISOString(),
+          };
+          console.log("➕ Adding text node:", textNode);
+          nodes.push(textNode);
+        }
+
+        // เพิ่ม linebreak ถ้ายังไม่ใช่บรรทัดสุดท้าย
+        if (lineIndex < lines.length - 1) {
+          const brNode = {
+            id: `br-${Date.now()}-${index}-${lineIndex}-${Math.random()}`,
+            type: "linebreak" as const,
+            content: "",
+            createdAt: new Date().toISOString(),
+          };
+          console.log("➕ Adding linebreak node:", brNode);
+          nodes.push(brNode);
+        }
+      });
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as Element;
+      console.log("🏷️ ELEMENT_NODE:", element.tagName);
 
       if (element.tagName === "CHAR-REF") {
         const characterId = element.getAttribute("id") || "";
         const content = element.textContent || "";
-        nodes.push({
-          id: `char-${Date.now()}-${index}`,
-          type: "character",
+        const charNode = {
+          id: `char-${Date.now()}-${index}-${Math.random()}`,
+          type: "character" as const,
           characterId,
           content,
-          context: "narrative", // default context
+          context: "narrative" as const,
           createdAt: new Date().toISOString(),
-        });
+        };
+        console.log("➕ Adding character node:", charNode);
+        nodes.push(charNode);
       } else if (element.tagName === "LOC-REF") {
         const locationId = element.getAttribute("id") || "";
         const content = element.textContent || "";
-        nodes.push({
-          id: `loc-${Date.now()}-${index}`,
-          type: "location",
+        const locNode = {
+          id: `loc-${Date.now()}-${index}-${Math.random()}`,
+          type: "location" as const,
           locationId,
           content,
           createdAt: new Date().toISOString(),
-        });
+        };
+        console.log("➕ Adding location node:", locNode);
+        nodes.push(locNode);
       } else if (element.tagName === "BR") {
-        nodes.push({
-          id: `br-${Date.now()}-${index}`,
-          type: "linebreak",
+        const brNode = {
+          id: `br-${Date.now()}-${index}-${Math.random()}`,
+          type: "linebreak" as const,
           content: "",
           createdAt: new Date().toISOString(),
-        });
+        };
+        console.log("➕ Adding BR linebreak node:", brNode);
+        nodes.push(brNode);
+      } else if (element.tagName === "DIV") {
+        // Handle <div> elements - parse child nodes ข้างใน
+        console.log("📦 DIV element, processing children...");
+
+        // เช็คว่า div นี้มีแค่ <br> อย่างเดียวหรือเปล่า
+        const hasOnlyBr =
+          element.childNodes.length === 1 &&
+          element.firstChild?.nodeName === "BR";
+
+        // เช็คว่า child node สุดท้ายเป็น <br> หรือเปล่า
+        const lastChildIsBr = element.lastChild?.nodeName === "BR";
+
+        // ถ้า div มีแค่ <br> ก็แค่เพิ่ม linebreak อย่างเดียว
+        if (hasOnlyBr) {
+          const brNode = {
+            id: `br-${Date.now()}-${index}-empty-div-${Math.random()}`,
+            type: "linebreak" as const,
+            content: "",
+            createdAt: new Date().toISOString(),
+          };
+          // console.log("➕ Adding empty DIV linebreak node:", brNode);
+          nodes.push(brNode);
+        } else {
+          // Process child nodes recursively สำหรับ div ที่มีเนื้อหา
+          const divChildren = Array.from(element.childNodes);
+          divChildren.forEach((childNode, childIndex) => {
+            processNode(
+              childNode,
+              childIndex,
+              "div-child",
+              childIndex === divChildren.length - 1
+            );
+          });
+
+          // ไม่เพิ่ม linebreak หลัง div ถ้า:
+          // 1. เป็น div สุดท้าย หรือ
+          // 2. child node สุดท้ายเป็น <br> อยู่แล้ว (เพราะ <br> จัดการ linebreak ให้แล้ว)
+          if (!isLast && !lastChildIsBr) {
+            const brNode = {
+              id: `br-${Date.now()}-${index}-content-div-${Math.random()}`,
+              type: "linebreak" as const,
+              content: "",
+              createdAt: new Date().toISOString(),
+            };
+            // console.log("➕ Adding content DIV linebreak node:", brNode);
+            nodes.push(brNode);
+          }
+        }
       }
+    }
+  };
+
+  // Process root level nodes
+  const childNodes = Array.from(tempDiv.childNodes);
+  childNodes.forEach((node, index) => {
+    processNode(node, index, "root", index === childNodes.length - 1);
+
+    // เพิ่ม linebreak ระหว่าง root level nodes (ยกเว้น node สุดท้าย)
+    // และไม่เพิ่มถ้า node ถัดไปเป็น DIV (เพราะ DIV จัดการ linebreak เอง)
+    const nextNode = childNodes[index + 1];
+    const shouldAddLinebreak =
+      index < childNodes.length - 1 && // ไม่ใช่ node สุดท้าย
+      node.nodeType === Node.ELEMENT_NODE && // node ปัจจุบันเป็น element
+      (node as Element).tagName !== "DIV" && // ไม่ใช่ DIV
+      nextNode?.nodeType === Node.ELEMENT_NODE && // node ถัดไปเป็น element
+      (nextNode as Element).tagName === "DIV"; // node ถัดไปเป็น DIV
+
+    if (shouldAddLinebreak) {
+      const brNode = {
+        id: `br-${Date.now()}-root-${index}-${Math.random()}`,
+        type: "linebreak" as const,
+        content: "",
+        createdAt: new Date().toISOString(),
+      };
+      // console.log("➕ Adding root level linebreak node:", brNode);
+      nodes.push(brNode);
     }
   });
 
+  // console.log("✅ convertHtmlToContentNodes OUTPUT:", nodes);
   return nodes;
 }
 
 export function convertContentNodesToHtml(nodes: ContentNode[]): string {
-  return nodes
-    .map((node) => {
+  // console.log("🔄 convertContentNodesToHtml INPUT:", nodes);
+
+  const html = nodes
+    .map((node, index) => {
+      let result = "";
       switch (node.type) {
         case "text":
-          return node.content;
+          result = node.content;
+          // console.log(`📝 Node ${index} (text):`, JSON.stringify(result));
+          break;
         case "character":
-          return `<char-ref id="${(node as any).characterId}">${
+          result = `<char-ref id="${(node as any).characterId}">${
             node.content
           }</char-ref>`;
+          // console.log(`👤 Node ${index} (character):`, result);
+          break;
         case "location":
-          return `<loc-ref id="${(node as any).locationId}">${
+          result = `<loc-ref id="${(node as any).locationId}">${
             node.content
           }</loc-ref>`;
+          // console.log(`📍 Node ${index} (location):`, result);
+          break;
         case "linebreak":
-          return "<br>";
+          result = "\n";
+          // console.log(`⏎ Node ${index} (linebreak):`, JSON.stringify(result));
+          break;
         default:
-          return "";
+          result = "";
+          // console.log(`❓ Node ${index} (unknown):`, node);
+          break;
       }
+      return result;
     })
     .join("");
+
+  // console.log("✅ convertContentNodesToHtml OUTPUT:", JSON.stringify(html));
+  return html;
 }
