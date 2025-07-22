@@ -193,7 +193,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
 
         <div className="header-actions">
           <button
-            className="btn-save"
+            className="location-btn-save"
             onClick={handleSave}
             disabled={!isModified}
           >
@@ -203,7 +203,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
 
           {onDelete && (
             <button
-              className="btn-delete"
+              className="location-btn-delete"
               onClick={() => setShowDeleteConfirm(true)}
               disabled={usage.length > 0}
               title={
@@ -216,7 +216,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
             </button>
           )}
 
-          <button className="btn-close" onClick={onCancel}>
+          <button className="location-btn-close" onClick={onCancel}>
             <X size={16} />
           </button>
         </div>
@@ -225,19 +225,25 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
       {/* Tab Navigation */}
       <div className="location-editor-tabs">
         <button
-          className={`tab-btn ${activeTab === "basic" ? "active" : ""}`}
+          className={`location-tab-btn ${
+            activeTab === "basic" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("basic")}
         >
           Basic Info
         </button>
         <button
-          className={`tab-btn ${activeTab === "hierarchy" ? "active" : ""}`}
+          className={`location-tab-btn ${
+            activeTab === "hierarchy" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("hierarchy")}
         >
           Hierarchy
         </button>
         <button
-          className={`tab-btn ${activeTab === "usage" ? "active" : ""}`}
+          className={`location-tab-btn ${
+            activeTab === "usage" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("usage")}
         >
           Usage ({usage.length})
@@ -256,7 +262,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="e.g., Academy Library"
-                className="form-input"
+                className="location-form-input"
               />
             </div>
 
@@ -297,7 +303,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                   handleInputChange("description", e.target.value)
                 }
                 placeholder="Describe this location..."
-                className="form-textarea"
+                className="location-form-textarea"
                 rows={4}
               />
             </div>
@@ -310,7 +316,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                 value={formData.names.short}
                 onChange={(e) => handleNamesChange("short", e.target.value)}
                 placeholder="e.g., Library"
-                className="form-input"
+                className="location-form-input"
               />
               <small>Used in narrative text</small>
             </div>
@@ -323,7 +329,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                 value={formData.names.full}
                 onChange={(e) => handleNamesChange("full", e.target.value)}
                 placeholder="e.g., The Grand Academy Library"
-                className="form-input"
+                className="location-form-input"
               />
               <small>Used in formal descriptions</small>
             </div>
@@ -338,13 +344,13 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                   handleNamesChange("description", e.target.value)
                 }
                 placeholder="e.g., The quiet, ancient library"
-                className="form-input"
+                className="location-form-input"
               />
               <small>Used in atmospheric descriptions</small>
             </div>
 
             <div className="form-group-row">
-              <label className="checkbox-label">
+              <label className="location-checkbox-label">
                 <input
                   type="checkbox"
                   checked={formData.active}
@@ -378,7 +384,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                   handleInputChange("parentLocation", e.target.value)
                 }
                 placeholder="e.g., Academy Campus"
-                className="form-input"
+                className="location-form-input"
               />
               <small>The larger location this place is part of</small>
             </div>
@@ -450,7 +456,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
             </p>
             <div className="modal-actions">
               <button
-                className="btn-cancel"
+                className="location-btn-cancel"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel

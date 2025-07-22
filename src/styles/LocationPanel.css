@@ -165,12 +165,39 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: var(--location-color);
+  background: transparent; 
   border-radius: 50%;
-  color: white;
+  color: var(--location-color); 
   font-weight: bold;
   font-size: 14px;
   flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.location-icon[data-type="indoor"] {
+  color: #3b82f6; /* Blue for indoor */
+}
+
+.location-icon[data-type="outdoor"] {
+  color: #10b981; /* Green for outdoor */
+}
+
+.location-icon[data-type="vehicle"] {
+  color: #f59e0b; /* Orange for vehicle */
+}
+
+.location-icon[data-type="abstract"] {
+  color: #8b5cf6; /* Purple for abstract */
+}
+
+/* Default fallback */
+.location-icon:not([data-type]) {
+  color: var(--location-color); /* Default purple */
+}
+
+/* Hover effect for icons */
+.location-item:hover .location-icon {
+  transform: scale(1.1);
 }
 
 .location-details {
@@ -386,5 +413,76 @@
   .location-type,
   .usage-count {
     font-size: 11px;
+  }
+}
+
+
+/* Location Insert Buttons */
+.location-insert-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.location-insert-buttons .insert-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.location-insert-buttons .insert-btn:hover {
+  transform: translateY(-1px);
+  color: white;
+}
+
+.location-insert-buttons .insert-btn .insert-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+/* Location button specific colors */
+.location-insert-buttons .insert-btn.full:hover {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.location-insert-buttons .insert-btn.short:hover {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.location-insert-buttons .insert-btn.description:hover {
+  background: #a855f7;
+  border-color: #a855f7;
+}
+
+/* Remove old single button styles */
+.character-insert,
+.location-insert {
+  display: none; /* Hide old single button containers */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .character-insert-buttons .insert-label,
+  .location-insert-buttons .insert-label {
+    max-width: 100px;
   }
 }

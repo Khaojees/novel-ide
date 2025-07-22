@@ -1,44 +1,63 @@
-// src/components/CharacterPanel/CharacterItem.tsx - Simplified Version
-import React, { useState } from "react";
-import { Pin, PinOff, MessageCircle, BookOpen, Eye } from "lucide-react";
+// ========================================
+// CHARACTER ITEM COMPONENT - Updated with 3 Insert Buttons
+// ========================================
+
+import { useState } from "react";
 import { Character } from "../../types";
-import { CharacterContext } from "../../types/structured";
+import { Pin, PinOff, MessageCircle, BookOpen, Eye } from "lucide-react";
 
 interface CharacterItemProps {
   character: Character;
   isPinned: boolean;
   onTogglePin: () => void;
-  onInsertDialogue: (text: string) => void;
-  onInsertCharacter: (context: CharacterContext) => void;
+  onInsertCharacter: (
+    characterId: string,
+    nameType: "dialogue" | "narrative" | "reference"
+  ) => void;
   onView: () => void;
-  dialogueInput: string;
-  onDialogueInputChange: (value: string) => void;
-  onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  usage: any[];
 }
 
 export const CharacterItem: React.FC<CharacterItemProps> = ({
   character,
   isPinned,
   onTogglePin,
-  onInsertDialogue,
   onInsertCharacter,
   onView,
-  dialogueInput,
-  onDialogueInputChange,
-  onKeyPress,
-  usage,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showDialogueInput, setShowDialogueInput] = useState(false);
-
-  const getDisplayName = () => {
-    return character.names?.dialogue || character.name;
-  };
 
   const handleCharacterClick = () => {
     // คลิกที่ชื่อตัวละครเพื่อเปิด tab
     onView();
+  };
+
+  // Helper function to get name for each type
+  const getNameByType = (type: "dialogue" | "narrative" | "reference") => {
+    switch (type) {
+      case "dialogue":
+        return character.names?.dialogue || character.name;
+      case "narrative":
+        return character.names?.narrative || character.name;
+      case "reference":
+        return character.names?.reference || character.name;
+      default:
+        return character.name;
+    }
+  };
+
+  const handleInsertDialogue = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsertCharacter(character.id, "dialogue");
+  };
+
+  const handleInsertNarrative = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsertCharacter(character.id, "narrative");
+  };
+
+  const handleInsertReference = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsertCharacter(character.id, "reference");
   };
 
   return (
@@ -52,6 +71,9 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
           className="character-info"
           onClick={() => setIsExpanded(!isExpanded)}
         >
+          <div className="character-avatar">
+            {character.name.charAt(0).toUpperCase()}
+          </div>
           <div className="character-details">
             <h4
               className="character-name"
@@ -63,14 +85,9 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
             >
               {character.name}
             </h4>
-            <div className="character-meta">
-              <span className="character-dialogue-name">
-                {getDisplayName()}
-              </span>
-              {usage.length > 0 && (
-                <span className="usage-count">{usage.length} mentions</span>
-              )}
-            </div>
+            {character.traits && (
+              <p className="character-traits">{character.traits}</p>
+            )}
           </div>
         </div>
 
@@ -80,109 +97,56 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
             onClick={onTogglePin}
             title={isPinned ? "Unpin character" : "Pin character"}
           >
-            {isPinned ? <Pin size={14} /> : <PinOff size={14} />}
+            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
           </button>
         </div>
       </div>
 
-      {/* Character Bio Preview */}
-      {character.bio && isExpanded && (
-        <div className="character-bio">
-          {character.bio.length > 150
-            ? `${character.bio.substring(0, 150)}...`
-            : character.bio}
-        </div>
-      )}
-
-      {/* Character Traits */}
-      {character.traits && isExpanded && (
-        <div className="character-traits">
-          <strong>Traits:</strong> {character.traits}
-        </div>
-      )}
-
-      {/* Quick Insert Actions - Simplified */}
-      <div className="character-quick-actions">
+      {/* Multiple Insert Buttons */}
+      <div className="character-insert-buttons">
         <button
-          className="quick-action-btn dialogue-btn"
-          onClick={() => setShowDialogueInput(!showDialogueInput)}
-          title="Add dialogue"
+          className="insert-btn dialogue"
+          onClick={handleInsertDialogue}
+          title={`Insert dialogue name: ${getNameByType("dialogue")}`}
         >
-          <MessageCircle size={14} />
-          Dialogue
+          <MessageCircle size={12} />
+          <span className="insert-label">{getNameByType("dialogue")}</span>
         </button>
 
         <button
-          className="quick-action-btn narrative-btn"
-          onClick={() => onInsertCharacter("narrative")}
-          title="Insert in narrative"
+          className="insert-btn narrative"
+          onClick={handleInsertNarrative}
+          title={`Insert narrative name: ${getNameByType("narrative")}`}
         >
-          <BookOpen size={14} />
-          Narrative
+          <BookOpen size={12} />
+          <span className="insert-label">{getNameByType("narrative")}</span>
         </button>
 
         <button
-          className="quick-action-btn reference-btn"
-          onClick={() => onInsertCharacter("reference")}
-          title="Insert as reference"
+          className="insert-btn reference"
+          onClick={handleInsertReference}
+          title={`Insert reference name: ${getNameByType("reference")}`}
         >
-          <Eye size={14} />
-          Reference
+          <Eye size={12} />
+          <span className="insert-label">{getNameByType("reference")}</span>
         </button>
       </div>
 
-      {/* Dialogue Input */}
-      {showDialogueInput && (
-        <div className="dialogue-input-container">
-          <textarea
-            value={dialogueInput}
-            onChange={(e) => onDialogueInputChange(e.target.value)}
-            onKeyDown={onKeyPress}
-            placeholder={`What does ${getDisplayName()} say?`}
-            className="dialogue-input"
-            rows={2}
-            autoFocus
-          />
-          <div className="dialogue-actions">
-            <button
-              className="dialogue-add-btn"
-              onClick={() => {
-                if (dialogueInput.trim()) {
-                  onInsertDialogue(dialogueInput.trim());
-                  setShowDialogueInput(false);
-                }
-              }}
-              disabled={!dialogueInput.trim()}
-            >
-              Add
-            </button>
-            <button
-              className="dialogue-cancel-btn"
-              onClick={() => setShowDialogueInput(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Usage Information */}
-      {isExpanded && usage.length > 0 && (
-        <div className="character-usage">
-          <h5>Used in:</h5>
-          <div className="usage-list">
-            {usage.slice(0, 3).map((use, index) => (
-              <div key={index} className="usage-item">
-                <span className="usage-file">{use.title}</span>
-                <span className="usage-mentions">{use.mentions} times</span>
-              </div>
-            ))}
-            {usage.length > 3 && (
-              <div className="usage-more">
-                +{usage.length - 3} more files...
-              </div>
-            )}
-          </div>
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="character-expanded">
+          {character.bio && (
+            <div className="character-bio">
+              <strong>Bio:</strong>
+              <p>{character.bio}</p>
+            </div>
+          )}
+          {character.appearance && (
+            <div className="character-appearance">
+              <strong>Appearance:</strong>
+              <p>{character.appearance}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

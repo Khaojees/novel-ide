@@ -267,7 +267,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="checkbox-label">
+                  <label className="location-checkbox-label">
                     <input
                       type="checkbox"
                       checked={formData.active}

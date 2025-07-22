@@ -225,9 +225,40 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
 
   // Insert character reference at cursor
   const insertCharacterRef = useCallback(
-    (characterId: string) => {
+    (
+      characterId: string,
+      nameType: "dialogue" | "narrative" | "reference" = "narrative"
+    ) => {
       const character = characters.find((c) => c.id === characterId);
       if (!character || !editorRef.current) return;
+
+      // Get the appropriate name based on type
+      let displayName = character.name; // fallback
+      switch (nameType) {
+        case "dialogue":
+          displayName = character.names?.dialogue || character.name;
+          break;
+        case "narrative":
+          displayName = character.names?.narrative || character.name;
+          break;
+        case "reference":
+          displayName = character.names?.reference || character.name;
+          break;
+      }
+
+      // Get dynamic color based on context
+      const getCharacterColor = (context: string) => {
+        switch (context) {
+          case "dialogue":
+            return "#10b981"; // Green
+          case "narrative":
+            return "#f59e0b"; // Orange
+          case "reference":
+            return "#8b5cf6"; // Purple
+          default:
+            return "#10b981"; // Default green
+        }
+      };
 
       editorRef.current.focus();
       const selection = window.getSelection();
@@ -236,7 +267,14 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       const range = selection.getRangeAt(0);
       const charRef = document.createElement("char-ref");
       charRef.setAttribute("id", characterId);
-      charRef.textContent = character.name;
+      charRef.setAttribute("data-context", nameType);
+
+      // ✅ Set dynamic background color based on context
+      const bgColor = getCharacterColor(nameType);
+      charRef.style.backgroundColor = bgColor;
+      charRef.style.color = "white";
+
+      charRef.textContent = displayName;
 
       range.deleteContents();
       range.insertNode(charRef);
@@ -254,9 +292,42 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
 
   // Insert location reference at cursor
   const insertLocationRef = useCallback(
-    (locationId: string) => {
+    (
+      locationId: string,
+      nameType: "full" | "short" | "description" = "short"
+    ) => {
       const location = locations.find((l) => l.id === locationId);
       if (!location || !editorRef.current) return;
+
+      // Get the appropriate name based on type
+      let displayName = location.name; // fallback
+      switch (nameType) {
+        case "full":
+          displayName = location.names?.full || location.name;
+          break;
+        case "short":
+          displayName = location.names?.short || location.name;
+          break;
+        case "description":
+          displayName = location.names?.description || location.name;
+          break;
+      }
+
+      // Get dynamic color based on location type
+      const getLocationColor = (type: string) => {
+        switch (type) {
+          case "indoor":
+            return "#3b82f6"; // Blue
+          case "outdoor":
+            return "#10b981"; // Green
+          case "vehicle":
+            return "#f59e0b"; // Orange
+          case "abstract":
+            return "#8b5cf6"; // Purple
+          default:
+            return "#a855f7"; // Default purple
+        }
+      };
 
       editorRef.current.focus();
       const selection = window.getSelection();
@@ -265,7 +336,15 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       const range = selection.getRangeAt(0);
       const locRef = document.createElement("loc-ref");
       locRef.setAttribute("id", locationId);
-      locRef.textContent = location.name;
+      locRef.setAttribute("data-type", nameType);
+      locRef.setAttribute("data-location-type", location.type || "default");
+
+      // ✅ Set dynamic background color based on location type
+      const bgColor = getLocationColor(location.type || "default");
+      locRef.style.backgroundColor = bgColor;
+      locRef.style.color = "white";
+
+      locRef.textContent = displayName;
 
       range.deleteContents();
       range.insertNode(locRef);

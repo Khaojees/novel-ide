@@ -1,8 +1,9 @@
 // src/components/CharacterPanel/CharacterPanel.tsx - Updated for new editor
 import React, { useState, useMemo } from "react";
-import { Search, Pin, PinOff, User, Plus } from "lucide-react";
+import { Search, User, Plus } from "lucide-react";
 import { Character } from "../../types";
 import { useProjectStore } from "../../store/projectStore";
+import { CharacterItem } from "./CharacterItem";
 
 interface CharacterPanelProps {}
 
@@ -50,9 +51,15 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
   };
 
   // ฟังก์ชันใหม่สำหรับส่ง character ref ไป editor
-  const handleInsertCharacter = (character: Character) => {
+  const handleInsertCharacter = (
+    characterId: string,
+    nameType: "dialogue" | "narrative" | "reference"
+  ) => {
     const event = new CustomEvent("insertCharacterRef", {
-      detail: { characterId: character.id },
+      detail: {
+        characterId: characterId,
+        nameType: nameType,
+      },
     });
     window.dispatchEvent(event);
   };
@@ -125,7 +132,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
               character={character}
               isPinned={pinnedCharacters.has(character.id)}
               onTogglePin={() => handleTogglePin(character.id)}
-              onInsert={() => handleInsertCharacter(character)}
+              onInsertCharacter={handleInsertCharacter}
               onView={() => handleOpenCharacter(character)}
             />
           ))
@@ -140,112 +147,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
           <span>{pinnedCharacters.size} pinned</span>
         </div>
       </div>
-    </div>
-  );
-};
-
-// ========================================
-// CHARACTER ITEM COMPONENT
-// ========================================
-
-interface CharacterItemProps {
-  character: Character;
-  isPinned: boolean;
-  onTogglePin: () => void;
-  onInsert: () => void;
-  onView: () => void;
-}
-
-const CharacterItem: React.FC<CharacterItemProps> = ({
-  character,
-  isPinned,
-  onTogglePin,
-  onInsert,
-  onView,
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const handleCharacterClick = () => {
-    // คลิกที่ชื่อตัวละครเพื่อเปิด tab
-    onView();
-  };
-
-  const handleInsertClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onInsert();
-  };
-
-  return (
-    <div
-      className={`character-item ${isPinned ? "pinned" : ""} ${
-        isExpanded ? "expanded" : ""
-      }`}
-    >
-      <div className="character-header">
-        <div
-          className="character-info"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="character-avatar">
-            {character.name.charAt(0).toUpperCase()}
-          </div>
-          <div className="character-details">
-            <h4
-              className="character-name"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCharacterClick();
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              {character.name}
-            </h4>
-            {character.traits && (
-              <p className="character-traits">{character.traits}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="character-actions">
-          <button
-            className={`pin-btn ${isPinned ? "pinned" : ""}`}
-            onClick={onTogglePin}
-            title={isPinned ? "Unpin character" : "Pin character"}
-          >
-            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Insert Button - แยกออกมาให้เห็นชัด */}
-      <div className="character-insert">
-        <button
-          className="insert-btn"
-          onClick={handleInsertClick}
-          title={`Insert ${character.name} reference`}
-        >
-          <span className="insert-icon">@</span>
-          Insert {character.name}
-        </button>
-      </div>
-
-      {/* Expanded Details */}
-      {isExpanded && (
-        <div className="character-expanded">
-          {character.bio && (
-            <div className="character-bio">
-              <strong>Bio:</strong>
-              <p>{character.bio}</p>
-            </div>
-          )}
-          {character.appearance && (
-            <div className="character-appearance">
-              <strong>Appearance:</strong>
-              <p>{character.appearance}</p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

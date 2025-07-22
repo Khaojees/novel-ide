@@ -162,7 +162,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
         <div className="header-actions">
           <button
-            className="btn-save"
+            className="character-btn-save"
             onClick={handleSave}
             disabled={!isModified}
           >
@@ -172,7 +172,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
           {onDelete && (
             <button
-              className="btn-delete"
+              className="character-btn-delete"
               onClick={() => setShowDeleteConfirm(true)}
               disabled={usage.length > 0}
               title={
@@ -185,7 +185,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
             </button>
           )}
 
-          <button className="btn-close" onClick={onCancel}>
+          <button className="character-btn-close" onClick={onCancel}>
             <X size={16} />
           </button>
         </div>
@@ -194,25 +194,33 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
       {/* Tab Navigation */}
       <div className="character-editor-tabs">
         <button
-          className={`tab-btn ${activeTab === "basic" ? "active" : ""}`}
+          className={`character-tab-btn ${
+            activeTab === "basic" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("basic")}
         >
           Basic Info
         </button>
         <button
-          className={`tab-btn ${activeTab === "names" ? "active" : ""}`}
+          className={`character-tab-btn ${
+            activeTab === "names" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("names")}
         >
           Names & Dialogue
         </button>
         <button
-          className={`tab-btn ${activeTab === "relationships" ? "active" : ""}`}
+          className={`character-tab-btn ${
+            activeTab === "relationships" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("relationships")}
         >
           Relationships
         </button>
         <button
-          className={`tab-btn ${activeTab === "usage" ? "active" : ""}`}
+          className={`character-tab-btn ${
+            activeTab === "usage" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("usage")}
         >
           Usage ({usage.length})
@@ -231,7 +239,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Enter character name"
-                className="form-input"
+                className="character-form-input"
               />
             </div>
 
@@ -243,7 +251,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.traits}
                 onChange={(e) => handleInputChange("traits", e.target.value)}
                 placeholder="e.g., Brave, mysterious, hot-tempered"
-                className="form-input"
+                className="character-form-input"
               />
             </div>
 
@@ -257,7 +265,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                   handleInputChange("appearance", e.target.value)
                 }
                 placeholder="e.g., Tall with piercing blue eyes"
-                className="form-input"
+                className="character-form-input"
               />
             </div>
 
@@ -268,7 +276,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.bio}
                 onChange={(e) => handleInputChange("bio", e.target.value)}
                 placeholder="Character's background story, history, motivations..."
-                className="form-textarea"
+                className="character-form-textarea"
                 rows={6}
               />
             </div>
@@ -280,13 +288,13 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 placeholder="Any additional notes about this character..."
-                className="form-textarea"
+                className="character-form-textarea"
                 rows={3}
               />
             </div>
 
             <div className="form-group-row">
-              <label className="checkbox-label">
+              <label className="character-checkbox-label">
                 <input
                   type="checkbox"
                   checked={formData.active}
@@ -321,7 +329,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.names?.dialogue || ""}
                 onChange={(e) => handleNamesChange("dialogue", e.target.value)}
                 placeholder="Name used in dialogue (e.g., Alex)"
-                className="form-input"
+                className="character-form-input"
               />
               <small>Used for: Alex: "Hello world!"</small>
             </div>
@@ -334,7 +342,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.names?.narrative || ""}
                 onChange={(e) => handleNamesChange("narrative", e.target.value)}
                 placeholder="Name used in narration (e.g., อเล็กซ์)"
-                className="form-input"
+                className="character-form-input"
               />
               <small>Used for: อเล็กซ์เดินเข้ามาในห้อง</small>
             </div>
@@ -347,7 +355,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
                 value={formData.names?.reference || ""}
                 onChange={(e) => handleNamesChange("reference", e.target.value)}
                 placeholder="Pronoun/reference (e.g., เขา, เธอ)"
-                className="form-input"
+                className="character-form-input"
               />
               <small>Used for: เขาหันมามอง</small>
             </div>
@@ -416,12 +424,15 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
             <div className="modal-actions">
               <button
-                className="btn-cancel"
+                className="character-btn-cancel"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel
               </button>
-              <button className="btn-delete-confirm" onClick={handleDelete}>
+              <button
+                className="character-btn-delete-confirm"
+                onClick={handleDelete}
+              >
                 Delete
               </button>
             </div>

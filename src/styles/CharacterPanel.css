@@ -377,3 +377,59 @@
     font-size: 11px;
   }
 }
+
+/* Character Insert Buttons */
+.character-insert-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.character-insert-buttons .insert-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.character-insert-buttons .insert-btn:hover {
+  transform: translateY(-1px);
+  color: white;
+}
+
+.character-insert-buttons .insert-btn .insert-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+/* Character button specific colors */
+.character-insert-buttons .insert-btn.dialogue:hover {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.character-insert-buttons .insert-btn.narrative:hover {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.character-insert-buttons .insert-btn.reference:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}

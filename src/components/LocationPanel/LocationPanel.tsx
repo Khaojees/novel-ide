@@ -52,9 +52,15 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
   };
 
   // ฟังก์ชันใหม่สำหรับส่ง location ref ไป editor
-  const handleInsertLocation = (location: Location) => {
+  const handleInsertLocation = (
+    locationId: string,
+    nameType: "full" | "short" | "description"
+  ) => {
     const event = new CustomEvent("insertLocationRef", {
-      detail: { locationId: location.id },
+      detail: {
+        locationId: locationId,
+        nameType: nameType,
+      },
     });
     window.dispatchEvent(event);
   };
@@ -128,7 +134,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
               location={location}
               isPinned={pinnedLocations.has(location.id)}
               onTogglePin={() => handleTogglePin(location.id)}
-              onInsert={() => handleInsertLocation(location)}
+              onInsertLocation={handleInsertLocation}
               onView={() => handleOpenLocation(location)}
               usage={getLocationUsage ? getLocationUsage(location.id) : []}
             />

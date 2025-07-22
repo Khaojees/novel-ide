@@ -1,8 +1,19 @@
 // ========================================
-// LOCATION ITEM COMPONENT
+// LOCATION ITEM COMPONENT - Updated with 3 Insert Buttons
 // ========================================
 
-import { Brain, Car, Home, MapPin, Pin, PinOff, TreePine } from "lucide-react";
+import {
+  Brain,
+  Car,
+  Home,
+  MapPin,
+  Pin,
+  PinOff,
+  TreePine,
+  Building,
+  Navigation,
+  Sparkles,
+} from "lucide-react";
 import { useState } from "react";
 import { Location } from "../../types/structured";
 
@@ -10,7 +21,10 @@ interface LocationItemProps {
   location: Location;
   isPinned: boolean;
   onTogglePin: () => void;
-  onInsert: () => void;
+  onInsertLocation: (
+    locationId: string,
+    nameType: "full" | "short" | "description"
+  ) => void;
   onView: () => void;
   usage: any[];
 }
@@ -19,7 +33,7 @@ export const LocationItem: React.FC<LocationItemProps> = ({
   location,
   isPinned,
   onTogglePin,
-  onInsert,
+  onInsertLocation,
   onView,
   usage,
 }) => {
@@ -49,14 +63,52 @@ export const LocationItem: React.FC<LocationItemProps> = ({
     return location.type.charAt(0).toUpperCase() + location.type.slice(1);
   };
 
+  const getIconColor = () => {
+    switch (location.type) {
+      case "indoor":
+        return "#3b82f6"; // Blue
+      case "outdoor":
+        return "#10b981"; // Green
+      case "vehicle":
+        return "#f59e0b"; // Orange
+      case "abstract":
+        return "#8b5cf6"; // Purple
+      default:
+        return "#a855f7"; // Default purple
+    }
+  };
+
   const handleLocationClick = () => {
-    // คลิกที่ชื่อสถานที่เพื่อเปิด tab
     onView();
   };
 
-  const handleInsertClick = (e: React.MouseEvent) => {
+  // Helper function to get name for each type
+  const getNameByType = (type: "full" | "short" | "description") => {
+    switch (type) {
+      case "full":
+        return location.names?.full || location.name;
+      case "short":
+        return location.names?.short || location.name;
+      case "description":
+        return location.names?.description || location.name;
+      default:
+        return location.name;
+    }
+  };
+
+  const handleInsertFull = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInsert();
+    onInsertLocation(location.id, "full");
+  };
+
+  const handleInsertShort = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsertLocation(location.id, "short");
+  };
+
+  const handleInsertDescription = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInsertLocation(location.id, "description");
   };
 
   return (
@@ -72,7 +124,8 @@ export const LocationItem: React.FC<LocationItemProps> = ({
         >
           <span
             className="location-icon"
-            style={{ color: location.color || "#a855f7" }}
+            data-type={location.type}
+            style={{ color: getIconColor() }}
           >
             {getLocationIcon()}
           </span>
@@ -107,15 +160,33 @@ export const LocationItem: React.FC<LocationItemProps> = ({
         </div>
       </div>
 
-      {/* Insert Button - แยกออกมาให้เห็นชัด */}
-      <div className="location-insert">
+      {/* Multiple Insert Buttons */}
+      <div className="location-insert-buttons">
         <button
-          className="insert-btn"
-          onClick={handleInsertClick}
-          title={`Insert ${getDisplayName()} reference`}
+          className="insert-btn full"
+          onClick={handleInsertFull}
+          title={`Insert full name: ${getNameByType("full")}`}
         >
-          <span className="insert-icon">@</span>
-          Insert {getDisplayName()}
+          <Building size={12} />
+          <span className="insert-label">{getNameByType("full")}</span>
+        </button>
+
+        <button
+          className="insert-btn short"
+          onClick={handleInsertShort}
+          title={`Insert short name: ${getNameByType("short")}`}
+        >
+          <Navigation size={12} />
+          <span className="insert-label">{getNameByType("short")}</span>
+        </button>
+
+        <button
+          className="insert-btn description"
+          onClick={handleInsertDescription}
+          title={`Insert descriptive name: ${getNameByType("description")}`}
+        >
+          <Sparkles size={12} />
+          <span className="insert-label">{getNameByType("description")}</span>
         </button>
       </div>
 
