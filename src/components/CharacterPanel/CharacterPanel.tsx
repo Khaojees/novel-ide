@@ -4,6 +4,7 @@ import { Search, User, Plus } from "lucide-react";
 import { Character } from "../../types";
 import { useProjectStore } from "../../store/projectStore";
 import { CharacterItem } from "./CharacterItem";
+import { CharacterContext } from "../../types/structured";
 
 interface CharacterPanelProps {}
 
@@ -55,7 +56,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
   // ฟังก์ชันใหม่สำหรับส่ง character ref ไป editor
   const handleInsertCharacter = (
     characterId: string,
-    nameType: "dialogue" | "narrative" | "reference"
+    nameType: CharacterContext
   ) => {
     const event = new CustomEvent("insertCharacterRef", {
       detail: {

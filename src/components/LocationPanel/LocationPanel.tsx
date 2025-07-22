@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { Search, MapPin, Plus } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
-import { Location } from "../../types/structured";
+import { Location, LocationContext } from "../../types/structured";
 import { LocationItem } from "./LocationItem";
 
 interface LocationPanelProps {}
@@ -56,7 +56,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
   // ฟังก์ชันใหม่สำหรับส่ง location ref ไป editor
   const handleInsertLocation = (
     locationId: string,
-    nameType: "full" | "short" | "description"
+    nameType: LocationContext
   ) => {
     const event = new CustomEvent("insertLocationRef", {
       detail: {

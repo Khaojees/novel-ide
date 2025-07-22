@@ -21,10 +21,7 @@ interface LocationItemProps {
   location: Location;
   isPinned: boolean;
   onTogglePin: () => void;
-  onInsertLocation: (
-    locationId: string,
-    nameType: "full" | "short" | "description"
-  ) => void;
+  onInsertLocation: (locationId: string, nameType: LocationContext) => void;
   onView: () => void;
   usage: any[];
 }
@@ -98,12 +95,12 @@ export const LocationItem: React.FC<LocationItemProps> = ({
 
   const handleInsertFull = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInsertLocation(location.id, "full");
+    onInsertLocation(location.id, "fullname");
   };
 
   const handleInsertShort = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInsertLocation(location.id, "short");
+    onInsertLocation(location.id, "shortname");
   };
 
   const handleInsertDescription = (e: React.MouseEvent) => {

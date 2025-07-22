@@ -5,15 +5,13 @@
 import { useState } from "react";
 import { Character } from "../../types";
 import { Pin, PinOff, MessageCircle, BookOpen, Eye } from "lucide-react";
+import { CharacterContext } from "../../types/structured";
 
 interface CharacterItemProps {
   character: Character;
   isPinned: boolean;
   onTogglePin: () => void;
-  onInsertCharacter: (
-    characterId: string,
-    nameType: "dialogue" | "narrative" | "reference"
-  ) => void;
+  onInsertCharacter: (characterId: string, nameType: CharacterContext) => void;
   onView: () => void;
 }
 
@@ -47,12 +45,12 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
 
   const handleInsertDialogue = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInsertCharacter(character.id, "dialogue");
+    onInsertCharacter(character.id, "fullname");
   };
 
   const handleInsertNarrative = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInsertCharacter(character.id, "narrative");
+    onInsertCharacter(character.id, "nickname");
   };
 
   const handleInsertReference = (e: React.MouseEvent) => {

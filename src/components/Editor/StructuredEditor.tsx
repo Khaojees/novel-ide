@@ -231,7 +231,11 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   // Insert character reference at cursor
   const insertCharacterRef = useCallback(
     (characterId: string, nameType: CharacterContext = "fullname") => {
+      // console.log("characterId ***>>>", characterId);
+      // console.log("nameType ***>>>", nameType);
+
       const character = characters.find((c) => c.id === characterId);
+      // console.log("character ***>>>", character);
       if (!character || !editorRef.current) return;
 
       // Get the appropriate name based on type
@@ -247,6 +251,7 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
           displayName = character.names?.reference || character.names.fullname;
           break;
       }
+      // console.log("displayName ***>>>", displayName);
 
       // Get dynamic color based on context
       const getCharacterColor = (context: string) => {
@@ -362,11 +367,11 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
   // Listen to custom events from character/location panels
   useEffect(() => {
     const handleInsertCharacter = (e: CustomEvent) => {
-      insertCharacterRef(e.detail.characterId);
+      insertCharacterRef(e.detail.characterId, e.detail.nameType);
     };
 
     const handleInsertLocation = (e: CustomEvent) => {
-      insertLocationRef(e.detail.locationId);
+      insertLocationRef(e.detail.locationId, e.detail.nameType);
     };
 
     // Listen to events from panels
