@@ -31,14 +31,13 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
   onModifiedChange,
 }) => {
   const [formData, setFormData] = useState<CharacterFormData>({
-    name: character.name,
     traits: character.traits,
     bio: character.bio,
     appearance: character.appearance || "",
     active: character.active,
     names: {
-      dialogue: character.names?.dialogue || character.name,
-      narrative: character.names?.narrative || character.name,
+      fullname: character.names?.fullname,
+      nickname: character.names?.nickname || character.names?.fullname,
       reference: character.names?.reference || "เขา/เธอ",
     },
     relationships: character.relationships || [],
@@ -48,21 +47,19 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "basic" | "names" | "relationships" | "usage"
+    "basic" | "relationships" | "usage"
   >("basic");
 
   // Track if form has changes
   useEffect(() => {
     const hasChanges =
-      formData.name !== character.name ||
+      formData.names.fullname !== character.names.fullname ||
       formData.traits !== character.traits ||
       formData.bio !== character.bio ||
       formData.appearance !== (character.appearance || "") ||
       formData.active !== character.active ||
-      formData.names?.dialogue !==
-        (character.names?.dialogue || character.name) ||
-      formData.names?.narrative !==
-        (character.names?.narrative || character.name) ||
+      formData.names?.nickname !==
+        (character.names?.nickname || character.names.nickname) ||
       formData.names?.reference !== (character.names?.reference || "เขา/เธอ") ||
       formData.notes !== (character.notes || "");
 
@@ -90,19 +87,21 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
+    if (!formData.names.fullname.trim()) {
       alert("Character name is required");
       return;
     }
 
     const updatedCharacter: Character = {
       ...character,
-      name: formData.name.trim(),
       traits: formData.traits.trim(),
       bio: formData.bio.trim(),
       appearance: formData.appearance.trim(),
       active: formData.active,
-      names: formData.names,
+      names: {
+        ...formData.names,
+        fullname: formData.names.fullname.trim(),
+      },
       relationships: formData.relationships,
       tags: formData.tags,
       notes: formData.notes?.trim(),
@@ -121,7 +120,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
     if (usage.length > 0) {
       alert(
-        `Cannot delete ${character.name}. Character is used in ${usage.length} file(s).`
+        `Cannot delete ${character.names.fullname}. Character is used in ${usage.length} file(s).`
       );
       return;
     }
@@ -203,14 +202,6 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
         </button>
         <button
           className={`character-tab-btn ${
-            activeTab === "names" ? "active" : ""
-          }`}
-          onClick={() => setActiveTab("names")}
-        >
-          Names & Dialogue
-        </button>
-        <button
-          className={`character-tab-btn ${
             activeTab === "relationships" ? "active" : ""
           }`}
           onClick={() => setActiveTab("relationships")}
@@ -232,13 +223,35 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
         {activeTab === "basic" && (
           <div className="tab-panel">
             <div className="form-group">
-              <label htmlFor="name">Character Name *</label>
+              <label htmlFor="name">Full Name *</label>
               <input
                 id="name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.names.fullname}
+                onChange={(e) => handleNamesChange("fullname", e.target.value)}
                 placeholder="Enter character name"
+                className="character-form-input"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="nickname">Nickname</label>
+              <input
+                id="nickname"
+                type="text"
+                value={formData.names.nickname}
+                onChange={(e) => handleNamesChange("nickname", e.target.value)}
+                placeholder="Enter nickname"
+                className="character-form-input"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="referencename">Reference Name</label>
+              <input
+                id="referencename"
+                type="text"
+                value={formData.names.reference}
+                onChange={(e) => handleNamesChange("reference", e.target.value)}
+                placeholder="Enter reference name"
                 className="character-form-input"
               />
             </div>
@@ -311,7 +324,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
           </div>
         )}
 
-        {activeTab === "names" && (
+        {/* {activeTab === "names" && (
           <div className="tab-panel">
             <div className="names-info">
               <AlertCircle size={16} />
@@ -360,7 +373,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
               <small>Used for: เขาหันมามอง</small>
             </div>
           </div>
-        )}
+        )} */}
 
         {activeTab === "relationships" && (
           <div className="tab-panel">
@@ -418,7 +431,8 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
           <div className="delete-confirm-modal">
             <h3>Delete Character</h3>
             <p>
-              Are you sure you want to delete <strong>{character.name}</strong>?
+              Are you sure you want to delete{" "}
+              <strong>{character.names.fullname}</strong>?
             </p>
             <p>This action cannot be undone.</p>
 

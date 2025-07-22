@@ -21,7 +21,9 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     let filtered = characters.filter(
       (character) =>
         character.active &&
-        character.name.toLowerCase().includes(searchQuery.toLowerCase())
+        character.names.fullname
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
     );
 
     // Show pinned characters first
@@ -30,7 +32,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
       const bPinned = pinnedCharacters.has(b.id);
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      return a.name.localeCompare(b.name);
+      return a.names.fullname.localeCompare(b.names.fullname);
     });
   }, [characters, searchQuery, pinnedCharacters]);
 
@@ -77,7 +79,9 @@ const CharacterPanel: React.FC<CharacterPanelProps> = () => {
     try {
       if (addCharacter) {
         await addCharacter({
-          name: name.trim(),
+          names: {
+            fullname: name.trim(),
+          },
           traits: "",
           bio: "",
           appearance: "",

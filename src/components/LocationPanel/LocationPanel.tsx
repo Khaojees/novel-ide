@@ -22,7 +22,9 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     let filtered = locations.filter(
       (location) =>
         location.active &&
-        location.name.toLowerCase().includes(searchQuery.toLowerCase())
+        location.names.fullname
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
     );
 
     // Show pinned locations first
@@ -31,7 +33,7 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
       const bPinned = pinnedLocations.has(b.id);
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      return a.name.localeCompare(b.name);
+      return a.names.fullname.localeCompare(b.names.fullname);
     });
   }, [locations, searchQuery, pinnedLocations]);
 
@@ -78,7 +80,9 @@ const LocationPanel: React.FC<LocationPanelProps> = () => {
     try {
       if (addLocation) {
         await addLocation({
-          name: name.trim(),
+          names: {
+            fullname: name.trim(),
+          },
           description: "",
           type: "indoor",
           active: true,

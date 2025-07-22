@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { Location } from "../../types/structured";
+import { Location, LocationContext } from "../../types/structured";
 
 interface LocationItemProps {
   location: Location;
@@ -55,7 +55,7 @@ export const LocationItem: React.FC<LocationItemProps> = ({
   };
 
   const getDisplayName = () => {
-    return location.names?.short || location.name;
+    return location.names.fullname || location.names.shortname;
   };
 
   const getTypeLabel = () => {
@@ -83,16 +83,16 @@ export const LocationItem: React.FC<LocationItemProps> = ({
   };
 
   // Helper function to get name for each type
-  const getNameByType = (type: "full" | "short" | "description") => {
+  const getNameByType = (type: LocationContext) => {
     switch (type) {
-      case "full":
-        return location.names?.full || location.name;
-      case "short":
-        return location.names?.short || location.name;
+      case "fullname":
+        return location.names?.fullname;
+      case "shortname":
+        return location.names?.shortname || location.names?.fullname;
       case "description":
-        return location.names?.description || location.name;
+        return location.names?.description || location.names?.fullname;
       default:
-        return location.name;
+        return location.names?.fullname;
     }
   };
 
@@ -165,19 +165,19 @@ export const LocationItem: React.FC<LocationItemProps> = ({
         <button
           className="insert-btn full"
           onClick={handleInsertFull}
-          title={`Insert full name: ${getNameByType("full")}`}
+          title={`Insert full name: ${getNameByType("fullname")}`}
         >
           <Building size={12} />
-          <span className="insert-label">{getNameByType("full")}</span>
+          <span className="insert-label">{getNameByType("fullname")}</span>
         </button>
 
         <button
           className="insert-btn short"
           onClick={handleInsertShort}
-          title={`Insert short name: ${getNameByType("short")}`}
+          title={`Insert short name: ${getNameByType("shortname")}`}
         >
           <Navigation size={12} />
-          <span className="insert-label">{getNameByType("short")}</span>
+          <span className="insert-label">{getNameByType("shortname")}</span>
         </button>
 
         <button
@@ -193,16 +193,14 @@ export const LocationItem: React.FC<LocationItemProps> = ({
       {/* Expanded Details */}
       {isExpanded && (
         <div className="location-expanded">
+          <div className="location-full-name">
+            <strong>Full name:</strong>
+            <p>{location.names.fullname}</p>
+          </div>
           {location.description && (
             <div className="location-description">
               <strong>Description:</strong>
               <p>{location.description}</p>
-            </div>
-          )}
-          {location.names?.full && (
-            <div className="location-full-name">
-              <strong>Full name:</strong>
-              <p>{location.names.full}</p>
             </div>
           )}
           {location.parentLocation && (

@@ -24,13 +24,12 @@ interface LocationUsage {
 }
 
 interface LocationFormData {
-  name: string;
   description: string;
   type: "indoor" | "outdoor" | "vehicle" | "abstract";
   names: {
-    short: string;
-    full: string;
-    description: string;
+    shortname?: string;
+    fullname: string;
+    description?: string;
   };
   parentLocation: string;
   color: string;
@@ -60,12 +59,11 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
     "basic"
   );
   const [formData, setFormData] = useState<LocationFormData>({
-    name: location.name,
     description: location.description || "",
     type: location.type || "indoor",
     names: {
-      short: location.names?.short || "",
-      full: location.names?.full || "",
+      shortname: location.names?.shortname || "",
+      fullname: location.names?.fullname || "",
       description: location.names?.description || "",
     },
     parentLocation: location.parentLocation || "",
@@ -103,7 +101,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
+    if (!formData.names.fullname.trim()) {
       alert("Location name is required");
       return;
     }
@@ -112,13 +110,16 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
       const updatedLocation: Location = {
         ...location,
         ...formData,
-        name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         parentLocation: formData.parentLocation.trim() || undefined,
         names: {
-          short: formData.names.short.trim() || undefined,
-          full: formData.names.full.trim() || undefined,
-          description: formData.names.description.trim() || undefined,
+          shortname: formData.names?.shortname
+            ? formData.names?.shortname.trim()
+            : undefined,
+          fullname: formData.names.fullname.trim(),
+          description: formData.names.description
+            ? formData.names.description.trim()
+            : undefined,
         },
         updatedAt: new Date().toISOString(),
       };
@@ -135,7 +136,7 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
 
     if (usage.length > 0) {
       alert(
-        `Cannot delete ${location.name}. Location is used in ${usage.length} file(s).`
+        `Cannot delete ${location.names.fullname}. Location is used in ${usage.length} file(s).`
       );
       return;
     }
@@ -255,15 +256,43 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
         {activeTab === "basic" && (
           <div className="tab-panel">
             <div className="form-group">
-              <label htmlFor="name">Location Name *</label>
+              <label htmlFor="name">Location Full Name *</label>
               <input
                 id="name"
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.names.fullname}
+                onChange={(e) => handleNamesChange("fullname", e.target.value)}
                 placeholder="e.g., Academy Library"
                 className="location-form-input"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="short-name">Short Name</label>
+              <input
+                id="short-name"
+                type="text"
+                value={formData.names.shortname}
+                onChange={(e) => handleNamesChange("shortname", e.target.value)}
+                placeholder="e.g., Library"
+                className="location-form-input"
+              />
+              <small>Used in narrative text</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="full-name">Full Name</label>
+              <input
+                id="full-name"
+                type="text"
+                value={formData.names.description}
+                onChange={(e) =>
+                  handleNamesChange("description", e.target.value)
+                }
+                placeholder="e.g., The Grand Academy Library"
+                className="location-form-input"
+              />
+              <small>Used in formal descriptions</small>
             </div>
 
             <div className="form-group-row">
@@ -306,47 +335,6 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
                 className="location-form-textarea"
                 rows={4}
               />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="short-name">Short Name</label>
-              <input
-                id="short-name"
-                type="text"
-                value={formData.names.short}
-                onChange={(e) => handleNamesChange("short", e.target.value)}
-                placeholder="e.g., Library"
-                className="location-form-input"
-              />
-              <small>Used in narrative text</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="full-name">Full Name</label>
-              <input
-                id="full-name"
-                type="text"
-                value={formData.names.full}
-                onChange={(e) => handleNamesChange("full", e.target.value)}
-                placeholder="e.g., The Grand Academy Library"
-                className="location-form-input"
-              />
-              <small>Used in formal descriptions</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description-name">Descriptive Name</label>
-              <input
-                id="description-name"
-                type="text"
-                value={formData.names.description}
-                onChange={(e) =>
-                  handleNamesChange("description", e.target.value)
-                }
-                placeholder="e.g., The quiet, ancient library"
-                className="location-form-input"
-              />
-              <small>Used in atmospheric descriptions</small>
             </div>
 
             <div className="form-group-row">
@@ -451,8 +439,8 @@ const LocationEditor: React.FC<LocationEditorProps> = ({
           <div className="modal-content">
             <h3>Delete Location</h3>
             <p>
-              Are you sure you want to delete "{location.name}"? This action
-              cannot be undone.
+              Are you sure you want to delete "{location.names.fullname}"? This
+              action cannot be undone.
             </p>
             <div className="modal-actions">
               <button

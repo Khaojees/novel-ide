@@ -17,7 +17,7 @@ export const LocationTag: React.FC<LocationTagProps> = ({
 }) => {
   const getDisplayName = () => {
     if (!location) return "[Unknown Location]";
-    return location.names?.short || location.name;
+    return location.names.fullname || location.names?.shortname;
   };
 
   const getTagClass = () => {
@@ -32,7 +32,9 @@ export const LocationTag: React.FC<LocationTagProps> = ({
       className={getTagClass()}
       onClick={onClick}
       onDoubleClick={onEdit}
-      title={location?.description || location?.name || "Unknown location"}
+      title={
+        location?.description || location?.names.fullname || "Unknown location"
+      }
       style={{
         backgroundColor: location?.color || "#ef4444",
         color: "white",

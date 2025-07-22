@@ -326,7 +326,7 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
     } else {
       const newTab: Tab = {
         id: character.id,
-        name: character.name,
+        name: character.names.fullname,
         type: "character",
         path: "",
         content: "",
@@ -355,7 +355,7 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
     const { locations } = get();
     const location = locations.find((l) => l.id === locationId);
     if (location) {
-      get().openTabById("location", locationId, location.name);
+      get().openTabById("location", locationId, location.names?.fullname);
     }
   },
 
@@ -437,7 +437,10 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
 
     const newCharacter: Character = {
       ...character,
-      id: character.name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(),
+      id:
+        character.names.fullname.toLowerCase().replace(/\s+/g, "-") +
+        "-" +
+        Date.now(),
     };
 
     const updatedCharacters = [...characters, newCharacter];
@@ -565,7 +568,7 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
     chapters.forEach((chapter) => {
       if (
         chapter.metadata.characters.includes(characterId) ||
-        chapter.metadata.characters.includes(character.name)
+        chapter.metadata.characters.includes(character.names.fullname)
       ) {
         usage.push({
           id: chapter.id,
@@ -594,7 +597,7 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
     });
 
     ideas.forEach((idea) => {
-      if (idea.content.includes(character.name)) {
+      if (idea.content.includes(character.names.fullname)) {
         usage.push({
           id: idea.id,
           type: "idea",
@@ -773,8 +776,8 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
         totalCharacters: 0,
         characterUsage: {},
         locationUsage: {},
-        dialoguePercentage: 0,
-        narrativePercentage: 0,
+        fullnamePercentage: 0,
+        nicknamePercentage: 0,
         actionPercentage: 0,
       };
     }
@@ -784,8 +787,8 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
       totalCharacters: chapter.metadata.characterCount || 0,
       characterUsage: {},
       locationUsage: {},
-      dialoguePercentage: 0,
-      narrativePercentage: 0,
+      fullnamePercentage: 0,
+      nicknamePercentage: 0,
       actionPercentage: 0,
     };
   },
@@ -799,7 +802,10 @@ export const useProjectStore = create<ExtendedProjectState>((set, get) => ({
 
     const newLocation: Location = {
       ...location,
-      id: location.name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(),
+      id:
+        location.names.fullname.toLowerCase().replace(/\s+/g, "-") +
+        "-" +
+        Date.now(),
     };
 
     const updatedLocations = [...locations, newLocation];

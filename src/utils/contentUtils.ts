@@ -147,13 +147,13 @@ export const calculateContentStats = (
     totalCharacters: 0,
     characterUsage: {},
     locationUsage: {},
-    dialoguePercentage: 0,
-    narrativePercentage: 0,
+    fullnamePercentage: 0,
+    nicknamePercentage: 0,
     actionPercentage: 0,
   };
 
-  let dialogueNodes = 0;
-  let narrativeNodes = 0;
+  let fullnameNodes = 0;
+  let nicknameNodes = 0;
   let actionNodes = 0;
 
   nodes.forEach((node, index) => {
@@ -170,8 +170,8 @@ export const calculateContentStats = (
 
       if (!stats.characterUsage[charId]) {
         stats.characterUsage[charId] = {
-          dialogueCount: 0,
-          narrativeCount: 0,
+          fullnameCount: 0,
+          nicknameCount: 0,
           referenceCount: 0,
           totalMentions: 0,
           firstAppearance: index,
@@ -181,13 +181,13 @@ export const calculateContentStats = (
       const usage = stats.characterUsage[charId];
 
       switch (node.context) {
-        case "dialogue":
-          usage.dialogueCount++;
-          dialogueNodes++;
+        case "fullname":
+          usage.fullnameCount++;
+          fullnameNodes++;
           break;
-        case "narrative":
-          usage.narrativeCount++;
-          narrativeNodes++;
+        case "nickname":
+          usage.nicknameCount++;
+          nicknameNodes++;
           break;
         case "reference":
           usage.referenceCount++;
@@ -215,10 +215,10 @@ export const calculateContentStats = (
   });
 
   // Calculate percentages
-  const totalContentNodes = dialogueNodes + narrativeNodes + actionNodes;
+  const totalContentNodes = fullnameNodes + nicknameNodes + actionNodes;
   if (totalContentNodes > 0) {
-    stats.dialoguePercentage = (dialogueNodes / totalContentNodes) * 100;
-    stats.narrativePercentage = (narrativeNodes / totalContentNodes) * 100;
+    stats.fullnamePercentage = (fullnameNodes / totalContentNodes) * 100;
+    stats.nicknamePercentage = (nicknameNodes / totalContentNodes) * 100;
     stats.actionPercentage = (actionNodes / totalContentNodes) * 100;
   }
 
@@ -230,12 +230,12 @@ export const getCharacterUsageInChapter = (
   characterId: string
 ): {
   totalMentions: number;
-  contexts: { dialogue: number; narrative: number; reference: number };
+  contexts: { fullname: number; nickname: number; reference: number };
   positions: number[];
 } => {
   const usage = {
     totalMentions: 0,
-    contexts: { dialogue: 0, narrative: 0, reference: 0 },
+    contexts: { fullname: 0, nickname: 0, reference: 0 },
     positions: [] as number[],
   };
 
@@ -289,12 +289,12 @@ export const parseMarkdownToNodes = (
 
         // Find character by name or dialogue name
         const character = characters.find(
-          (c) => c.name === speakerName || c.names?.dialogue === speakerName
+          (c) => c.names.fullname === speakerName
         );
 
         if (character) {
           // Add character node for speaker
-          result.nodes!.push(createCharacterNode(character.id, "dialogue"));
+          result.nodes!.push(createCharacterNode(character.id, "fullname"));
 
           // Add text node for dialogue content
           result.nodes!.push(createTextNode(`"${dialogueText}"`));
@@ -343,9 +343,8 @@ const parseTextForMentions = (
   // Find character mentions
   characters.forEach((character) => {
     const patterns = [
-      character.name,
-      character.names?.narrative,
-      character.names?.dialogue,
+      character.names.fullname,
+      character.names?.nickname,
       character.names?.reference,
     ].filter(Boolean) as string[];
 
@@ -372,9 +371,9 @@ const parseTextForMentions = (
   // Find location mentions
   locations.forEach((location) => {
     const patterns = [
-      location.name,
-      location.names?.short,
-      location.names?.full,
+      location.names?.fullname,
+      location.names?.shortname,
+      location.names?.description,
     ].filter(Boolean) as string[];
 
     patterns.forEach((pattern) => {
@@ -418,7 +417,7 @@ const parseTextForMentions = (
     // Add mention node
     if (mention.type === "character") {
       nodes.push(
-        createCharacterNode(mention.id, mention.context || "narrative")
+        createCharacterNode(mention.id, mention.context || "fullname")
       );
     } else {
       nodes.push(createLocationNode(mention.id));
@@ -455,7 +454,7 @@ const determineCharacterContext = (
 
   // Check for dialogue patterns
   if (beforeText.trim().endsWith(":") || afterText.trim().startsWith(":")) {
-    return "dialogue";
+    return "fullname";
   }
 
   // Check for action verbs after character name
@@ -473,7 +472,7 @@ const determineCharacterContext = (
   const nextWords = afterText.trim().split(/\s+/).slice(0, 2);
 
   if (nextWords.some((word) => actionVerbs.includes(word))) {
-    return "narrative";
+    return "nickname";
   }
 
   // Check for possessive or reference patterns
@@ -484,8 +483,8 @@ const determineCharacterContext = (
     return "reference";
   }
 
-  // Default to narrative
-  return "narrative";
+  // Default to nickname
+  return "nickname";
 };
 
 // ========================================
@@ -508,21 +507,21 @@ export const renderNodesToText = (
           if (!character) return "[Unknown Character]";
 
           switch (node.context) {
-            case "dialogue":
-              const dialogueName = character.names?.dialogue || character.name;
+            case "fullname":
+              const dialogueName = character.names?.fullname;
               return dialogueName + (node.content ? "" : ":");
-            case "narrative":
-              return character.names?.narrative || character.name;
+            case "nickname":
+              return character.names?.nickname || character.names?.fullname;
             case "reference":
-              return character.names?.reference || character.name;
+              return character.names?.reference || character.names?.fullname;
             default:
-              return character.name;
+              return character.names?.fullname;
           }
 
         case "location":
           const location = locations.find((l) => l.id === node.locationId);
           if (!location) return "[Unknown Location]";
-          return location.names?.short || location.name;
+          return location.names.fullname || location.names?.shortname;
 
         case "linebreak":
           return "\n";
@@ -650,7 +649,7 @@ export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
           type: "character" as const,
           characterId,
           content,
-          context: "narrative" as const,
+          context: "nickname" as const,
           createdAt: new Date().toISOString(),
         };
         console.log("➕ Adding character node:", charNode);

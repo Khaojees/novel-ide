@@ -21,8 +21,12 @@ export const CharacterModal: React.FC<CharacterModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.traits && formData.bio) {
+      const { name, ...filterFormData } = formData;
       onSave({
-        ...formData,
+        ...filterFormData,
+        names: {
+          fullname: name,
+        },
         active: true,
       });
     }

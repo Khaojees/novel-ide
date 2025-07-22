@@ -1,7 +1,7 @@
 // src/components/Sidebar/components/LocationModal.tsx
 import React, { useState } from "react";
 import { X, MapPin, Home, TreePine, Car, Brain } from "lucide-react";
-import { Location } from "../../../types/structured";
+import { Location, LocationContext } from "../../../types/structured";
 
 interface LocationModalProps {
   onClose: () => void;
@@ -10,12 +10,11 @@ interface LocationModalProps {
 
 const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    name: "",
     description: "",
     type: "indoor" as "indoor" | "outdoor" | "vehicle" | "abstract",
     names: {
-      short: "",
-      full: "",
+      shortname: "",
+      fullname: "",
       description: "",
     },
     parentLocation: "",
@@ -32,7 +31,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
     }));
   };
 
-  const handleNamesChange = (field: string, value: string) => {
+  const handleNamesChange = (field: LocationContext, value: string) => {
     setFormData((prev) => ({
       ...prev,
       names: {
@@ -44,18 +43,17 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.names.fullname.trim()) return;
 
     setIsLoading(true);
 
     try {
       const locationData: Omit<Location, "id"> = {
-        name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         type: formData.type,
         names: {
-          short: formData.names.short.trim() || undefined,
-          full: formData.names.full.trim() || undefined,
+          shortname: formData.names.shortname.trim() || undefined,
+          fullname: formData.names.fullname.trim(),
           description: formData.names.description.trim() || undefined,
         },
         parentLocation: formData.parentLocation.trim() || undefined,
@@ -112,23 +110,64 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
           {" "}
           {/* เปลี่ยนจาก <form className="modal-content"> */}
           <form onSubmit={handleSubmit}>
+            {/* Display Names */}
+            <div className="form-section">
+              <h4>Display Names</h4>
+              <p className="form-description">
+                Configure how this location appears in different contexts
+              </p>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="name-full">Full Name</label>
+                  <input
+                    id="name-full"
+                    type="text"
+                    value={formData.names.fullname}
+                    onChange={(e) =>
+                      handleNamesChange("fullname", e.target.value)
+                    }
+                    placeholder="e.g., The Grand Royal Library"
+                    disabled={isLoading}
+                  />
+                  <small>Used in formal descriptions</small>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="name-short">Short Name</label>
+                  <input
+                    id="name-short"
+                    type="text"
+                    value={formData.names.shortname}
+                    onChange={(e) =>
+                      handleNamesChange("shortname", e.target.value)
+                    }
+                    placeholder="e.g., Library"
+                    disabled={isLoading}
+                  />
+                  <small>Used in quick references</small>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="name-description">Descriptive Name</label>
+                <input
+                  id="name-description"
+                  type="text"
+                  value={formData.names.description}
+                  onChange={(e) =>
+                    handleNamesChange("description", e.target.value)
+                  }
+                  placeholder="e.g., The quiet, ancient library"
+                  disabled={isLoading}
+                />
+                <small>Used in atmospheric descriptions</small>
+              </div>
+            </div>
+
             {/* Basic Information */}
             <div className="form-section">
               <h4>Basic Information</h4>
-
-              <div className="form-group">
-                <label htmlFor="location-name">Location Name *</label>
-                <input
-                  id="location-name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Enter location name..."
-                  required
-                  autoFocus
-                  disabled={isLoading}
-                />
-              </div>
 
               <div className="form-group">
                 <label htmlFor="location-type">Type</label>
@@ -166,57 +205,6 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
                   rows={3}
                   disabled={isLoading}
                 />
-              </div>
-            </div>
-
-            {/* Display Names */}
-            <div className="form-section">
-              <h4>Display Names</h4>
-              <p className="form-description">
-                Configure how this location appears in different contexts
-              </p>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="name-short">Short Name</label>
-                  <input
-                    id="name-short"
-                    type="text"
-                    value={formData.names.short}
-                    onChange={(e) => handleNamesChange("short", e.target.value)}
-                    placeholder="e.g., Library"
-                    disabled={isLoading}
-                  />
-                  <small>Used in quick references</small>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="name-full">Full Name</label>
-                  <input
-                    id="name-full"
-                    type="text"
-                    value={formData.names.full}
-                    onChange={(e) => handleNamesChange("full", e.target.value)}
-                    placeholder="e.g., The Grand Royal Library"
-                    disabled={isLoading}
-                  />
-                  <small>Used in formal descriptions</small>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="name-description">Descriptive Name</label>
-                <input
-                  id="name-description"
-                  type="text"
-                  value={formData.names.description}
-                  onChange={(e) =>
-                    handleNamesChange("description", e.target.value)
-                  }
-                  placeholder="e.g., The quiet, ancient library"
-                  disabled={isLoading}
-                />
-                <small>Used in atmospheric descriptions</small>
               </div>
             </div>
 
@@ -261,7 +249,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
                       className="color-preview"
                       style={{ backgroundColor: formData.color }}
                     >
-                      📍 {formData.name || "Sample"}
+                      📍 {formData.names.fullname || "Sample"}
                     </span>
                   </div>
                 </div>
@@ -297,7 +285,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ onClose, onSave }) => {
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={!formData.name.trim() || isLoading}
+                disabled={!formData.names.fullname.trim() || isLoading}
               >
                 {isLoading ? "Creating..." : "Create Location"}
               </button>

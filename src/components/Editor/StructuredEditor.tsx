@@ -1,7 +1,12 @@
 // src/components/Editor/StructuredEditor.tsx
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Character } from "../../types";
-import { Location, StructuredChapter } from "../../types/structured";
+import {
+  CharacterContext,
+  Location,
+  LocationContext,
+  StructuredChapter,
+} from "../../types/structured";
 import { Save, Trash2, RotateCcw } from "lucide-react";
 import { useProjectStore } from "../../store/projectStore";
 import { useConfirm } from "../ConfirmDialogContext/ConfirmDialogContext";
@@ -127,8 +132,8 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     charRefs.forEach((ref) => {
       const charId = ref.getAttribute("id");
       const character = characters.find((c) => c.id === charId);
-      if (character && ref.textContent !== character.name) {
-        ref.textContent = character.name;
+      if (character && ref.textContent !== character.names.fullname) {
+        ref.textContent = character.names.fullname;
         updated = true;
       }
     });
@@ -138,8 +143,8 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     locRefs.forEach((ref) => {
       const locId = ref.getAttribute("id");
       const location = locations.find((l) => l.id === locId);
-      if (location && ref.textContent !== location.name) {
-        ref.textContent = location.name;
+      if (location && ref.textContent !== location.names.fullname) {
+        ref.textContent = location.names.fullname;
         updated = true;
       }
     });
@@ -225,24 +230,21 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
 
   // Insert character reference at cursor
   const insertCharacterRef = useCallback(
-    (
-      characterId: string,
-      nameType: "dialogue" | "narrative" | "reference" = "narrative"
-    ) => {
+    (characterId: string, nameType: CharacterContext = "fullname") => {
       const character = characters.find((c) => c.id === characterId);
       if (!character || !editorRef.current) return;
 
       // Get the appropriate name based on type
-      let displayName = character.name; // fallback
+      let displayName = character.names.fullname; // fallback
       switch (nameType) {
-        case "dialogue":
-          displayName = character.names?.dialogue || character.name;
+        case "fullname":
+          displayName = character.names.fullname;
           break;
-        case "narrative":
-          displayName = character.names?.narrative || character.name;
+        case "nickname":
+          displayName = character.names?.nickname || character.names.fullname;
           break;
         case "reference":
-          displayName = character.names?.reference || character.name;
+          displayName = character.names?.reference || character.names.fullname;
           break;
       }
 
@@ -292,24 +294,21 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
 
   // Insert location reference at cursor
   const insertLocationRef = useCallback(
-    (
-      locationId: string,
-      nameType: "full" | "short" | "description" = "short"
-    ) => {
+    (locationId: string, nameType: LocationContext = "fullname") => {
       const location = locations.find((l) => l.id === locationId);
       if (!location || !editorRef.current) return;
 
       // Get the appropriate name based on type
-      let displayName = location.name; // fallback
+      let displayName = location.names.fullname; // fallback
       switch (nameType) {
-        case "full":
-          displayName = location.names?.full || location.name;
+        case "fullname":
+          displayName = location.names?.fullname;
           break;
-        case "short":
-          displayName = location.names?.short || location.name;
+        case "shortname":
+          displayName = location.names?.shortname || location.names?.fullname;
           break;
         case "description":
-          displayName = location.names?.description || location.name;
+          displayName = location.names?.description || location.names?.fullname;
           break;
       }
 

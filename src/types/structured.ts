@@ -4,7 +4,7 @@
 // ========================================
 
 export type ContentNodeType = "text" | "character" | "location" | "linebreak";
-export type CharacterContext = "dialogue" | "narrative" | "reference";
+export type CharacterContext = "fullname" | "nickname" | "reference";
 
 export interface BaseContentNode {
   id: string;
@@ -96,9 +96,10 @@ export interface StructuredChapter {
 // 🏢 LOCATION TYPE (new)
 // ========================================
 
+export type LocationContext = "fullname" | "shortname" | "description";
+
 export interface Location {
   id: string;
-  name: string;
   description?: string;
   type?: "indoor" | "outdoor" | "vehicle" | "abstract";
 
@@ -107,9 +108,9 @@ export interface Location {
   subLocations?: string[]; // IDs of child locations
 
   // Display names for different contexts
-  names?: {
-    short?: string; // "ห้องสมุด"
-    full?: string; // "ห้องสมุดใหญ่ของโรงเรียน"
+  names: {
+    fullname: string; // "ห้องสมุดใหญ่ของโรงเรียน"
+    shortname?: string; // "ห้องสมุด"
     description?: string; // "ห้องสมุดที่เงียบสงบ"
   };
 
@@ -133,8 +134,8 @@ export interface ContentStats {
   // Character usage
   characterUsage: {
     [characterId: string]: {
-      dialogueCount: number;
-      narrativeCount: number;
+      fullnameCount: number;
+      nicknameCount: number;
       referenceCount: number;
       totalMentions: number;
       firstAppearance?: number; // node index
@@ -152,8 +153,8 @@ export interface ContentStats {
   };
 
   // Content distribution
-  dialoguePercentage: number;
-  narrativePercentage: number;
+  fullnamePercentage: number;
+  nicknamePercentage: number;
   actionPercentage: number;
 }
 

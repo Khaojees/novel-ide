@@ -32,16 +32,16 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
   };
 
   // Helper function to get name for each type
-  const getNameByType = (type: "dialogue" | "narrative" | "reference") => {
+  const getNameByType = (type: "fullname" | "nickname" | "reference") => {
     switch (type) {
-      case "dialogue":
-        return character.names?.dialogue || character.name;
-      case "narrative":
-        return character.names?.narrative || character.name;
+      case "fullname":
+        return character.names?.fullname;
+      case "nickname":
+        return character.names?.nickname || character.names?.fullname;
       case "reference":
-        return character.names?.reference || character.name;
+        return character.names?.reference || character.names?.fullname;
       default:
-        return character.name;
+        return character.names?.fullname;
     }
   };
 
@@ -72,7 +72,7 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="character-avatar">
-            {character.name.charAt(0).toUpperCase()}
+            {character.names.fullname.charAt(0).toUpperCase()}
           </div>
           <div className="character-details">
             <h4
@@ -83,7 +83,7 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
               }}
               style={{ cursor: "pointer" }}
             >
-              {character.name}
+              {character.names.fullname}
             </h4>
             {character.traits && (
               <p className="character-traits">{character.traits}</p>
@@ -107,19 +107,19 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
         <button
           className="insert-btn dialogue"
           onClick={handleInsertDialogue}
-          title={`Insert dialogue name: ${getNameByType("dialogue")}`}
+          title={`Insert fullname: ${getNameByType("fullname")}`}
         >
           <MessageCircle size={12} />
-          <span className="insert-label">{getNameByType("dialogue")}</span>
+          <span className="insert-label">{getNameByType("fullname")}</span>
         </button>
 
         <button
           className="insert-btn narrative"
           onClick={handleInsertNarrative}
-          title={`Insert narrative name: ${getNameByType("narrative")}`}
+          title={`Insert nickname: ${getNameByType("nickname")}`}
         >
           <BookOpen size={12} />
-          <span className="insert-label">{getNameByType("narrative")}</span>
+          <span className="insert-label">{getNameByType("nickname")}</span>
         </button>
 
         <button

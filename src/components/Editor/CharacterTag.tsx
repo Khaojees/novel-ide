@@ -20,14 +20,14 @@ export const CharacterTag: React.FC<CharacterTagProps> = ({
     if (!character) return "[Unknown Character]";
 
     switch (node.context) {
-      case "dialogue":
-        return character.names?.dialogue || character.name;
-      case "narrative":
-        return character.names?.narrative || character.name;
+      case "fullname":
+        return character.names.fullname;
+      case "nickname":
+        return character.names?.nickname || character.names.fullname;
       case "reference":
-        return character.names?.reference || character.name;
+        return character.names?.reference || character.names.fullname;
       default:
-        return character.name;
+        return character.names.fullname;
     }
   };
 
@@ -44,7 +44,7 @@ export const CharacterTag: React.FC<CharacterTagProps> = ({
       className={getTagClass()}
       onClick={onClick}
       onDoubleClick={onEdit}
-      title={character?.bio || character?.name || "Unknown character"}
+      title={character?.bio || character?.names.fullname || "Unknown character"}
     >
       👤 {getDisplayName()}
     </span>

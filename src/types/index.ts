@@ -3,15 +3,14 @@
 // Character types
 export interface Character {
   id: string;
-  name: string;
   traits: string;
   bio: string;
   appearance?: string;
   active: boolean;
   // เพิ่ม fields สำหรับ future structured data
-  names?: {
-    dialogue?: string; // ชื่อตอนพูด
-    narrative?: string; // ชื่อตอนเล่าเรื่อง
+  names: {
+    fullname: string; // ชื่อตอนพูด
+    nickname?: string; // ชื่อตอนเล่าเรื่อง
     reference?: string; // ชื่อตอนอ้างอิง
   };
   relationships?: string[];
@@ -143,14 +142,13 @@ declare global {
 
 // Character Editor specific types
 export interface CharacterFormData {
-  name: string;
   traits: string;
   bio: string;
   appearance: string;
   active: boolean;
-  names?: {
-    dialogue?: string;
-    narrative?: string;
+  names: {
+    fullname: string;
+    nickname?: string;
     reference?: string;
   };
   relationships?: string[];
