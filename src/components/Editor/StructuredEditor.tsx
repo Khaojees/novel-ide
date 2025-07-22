@@ -131,10 +131,31 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     const charRefs = editorRef.current.querySelectorAll("char-ref");
     charRefs.forEach((ref) => {
       const charId = ref.getAttribute("id");
+      const nameType = ref.getAttribute("data-context") || "fullname"; // ดึง context จาก attribute
       const character = characters.find((c) => c.id === charId);
-      if (character && ref.textContent !== character.names.fullname) {
-        ref.textContent = character.names.fullname;
-        updated = true;
+
+      if (character) {
+        // ใช้ logic เดียวกับตอน insert
+        let correctDisplayName = character.names.fullname;
+        switch (nameType) {
+          case "fullname":
+            correctDisplayName = character.names.fullname;
+            break;
+          case "nickname":
+            correctDisplayName =
+              character.names?.nickname || character.names.fullname;
+            break;
+          case "reference":
+            correctDisplayName =
+              character.names?.reference || character.names.fullname;
+            break;
+        }
+
+        // update ก็ต่อเมื่อชื่อเปลี่ยน
+        if (ref.textContent !== correctDisplayName) {
+          ref.textContent = correctDisplayName;
+          updated = true;
+        }
       }
     });
 
@@ -142,10 +163,31 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
     const locRefs = editorRef.current.querySelectorAll("loc-ref");
     locRefs.forEach((ref) => {
       const locId = ref.getAttribute("id");
+      const nameType = ref.getAttribute("data-type") || "fullname"; // ดึง type จาก attribute
       const location = locations.find((l) => l.id === locId);
-      if (location && ref.textContent !== location.names.fullname) {
-        ref.textContent = location.names.fullname;
-        updated = true;
+
+      if (location) {
+        // ใช้ logic เดียวกับตอน insert
+        let correctDisplayName = location.names.fullname;
+        switch (nameType) {
+          case "fullname":
+            correctDisplayName = location.names?.fullname;
+            break;
+          case "shortname":
+            correctDisplayName =
+              location.names?.shortname || location.names?.fullname;
+            break;
+          case "description":
+            correctDisplayName =
+              location.names?.description || location.names?.fullname;
+            break;
+        }
+
+        // update ก็ต่อเมื่อชื่อเปลี่ยน
+        if (ref.textContent !== correctDisplayName) {
+          ref.textContent = correctDisplayName;
+          updated = true;
+        }
       }
     });
 
@@ -154,7 +196,6 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       handleInput();
     }
   }, [characters, locations, handleInput]);
-
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

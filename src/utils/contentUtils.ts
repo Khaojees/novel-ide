@@ -643,17 +643,32 @@ export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
 
       if (element.tagName === "CHAR-REF") {
         const characterId = element.getAttribute("id") || "";
+        const context = element.getAttribute("data-context") || "fullname"; // 👈 อ่าน attribute
         const content = element.textContent || "";
         const charNode = {
           id: `char-${Date.now()}-${index}-${Math.random()}`,
           type: "character" as const,
           characterId,
           content,
-          context: "nickname" as const,
+          context: context as any, // 👈 ใช้จาก attribute
           createdAt: new Date().toISOString(),
         };
         console.log("➕ Adding character node:", charNode);
         nodes.push(charNode);
+      } else if (element.tagName === "LOC-REF") {
+        const locationId = element.getAttribute("id") || "";
+        const nameType = element.getAttribute("data-type") || "fullname"; // 👈 อ่าน attribute
+        const content = element.textContent || "";
+        const locNode = {
+          id: `loc-${Date.now()}-${index}-${Math.random()}`,
+          type: "location" as const,
+          locationId,
+          content,
+          nameType: nameType as any, // 👈 เพิ่ม nameType
+          createdAt: new Date().toISOString(),
+        };
+        console.log("➕ Adding location node:", locNode);
+        nodes.push(locNode);
       } else if (element.tagName === "LOC-REF") {
         const locationId = element.getAttribute("id") || "";
         const content = element.textContent || "";
@@ -759,41 +774,35 @@ export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
 }
 
 export function convertContentNodesToHtml(nodes: ContentNode[]): string {
-  // console.log("🔄 convertContentNodesToHtml INPUT:", nodes);
-
   const html = nodes
     .map((node, index) => {
       let result = "";
       switch (node.type) {
         case "text":
           result = node.content;
-          // console.log(`📝 Node ${index} (text):`, JSON.stringify(result));
           break;
         case "character":
-          result = `<char-ref id="${(node as any).characterId}">${
-            node.content
-          }</char-ref>`;
-          // console.log(`👤 Node ${index} (character):`, result);
+          // เก็บ context และ characterId ใน attributes
+          const charNode = node as any;
+          const context = charNode.context || "fullname";
+          result = `<char-ref id="${charNode.characterId}" data-context="${context}">${node.content}</char-ref>`;
           break;
         case "location":
-          result = `<loc-ref id="${(node as any).locationId}">${
-            node.content
-          }</loc-ref>`;
-          // console.log(`📍 Node ${index} (location):`, result);
+          // เก็บ nameType และ locationId ใน attributes
+          const locNode = node as any;
+          const nameType = locNode.nameType || "fullname";
+          result = `<loc-ref id="${locNode.locationId}" data-type="${nameType}">${node.content}</loc-ref>`;
           break;
         case "linebreak":
           result = "\n";
-          // console.log(`⏎ Node ${index} (linebreak):`, JSON.stringify(result));
           break;
         default:
           result = "";
-          // console.log(`❓ Node ${index} (unknown):`, node);
           break;
       }
       return result;
     })
     .join("");
 
-  // console.log("✅ convertContentNodesToHtml OUTPUT:", JSON.stringify(html));
   return html;
 }
