@@ -148,7 +148,7 @@ export const LocationItem: React.FC<LocationItemProps> = ({
 
         <div className="location-actions">
           <button
-            className={`pin-btn ${isPinned ? "pinned" : ""}`}
+            className={`location-pin-btn ${isPinned ? "pinned" : ""}`}
             onClick={onTogglePin}
             title={isPinned ? "Unpin location" : "Pin location"}
           >

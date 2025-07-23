@@ -514,6 +514,74 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
       .filter((word) => word.length > 0).length;
   };
 
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      e.preventDefault(); // หยุด default paste behavior
+
+      const pastedText = e.clipboardData.getData("text/plain");
+
+      if (!editorRef.current) return;
+
+      // ลองแยกประเภทข้อความที่วาง
+      let contentToInsert = "";
+
+      // 1. ลองตรวจสอบว่าเป็น HTML ธรรมดาไหม (จาก browser copy)
+      if (
+        pastedText.includes("<div>") ||
+        pastedText.includes("<p>") ||
+        pastedText.includes("<span>")
+      ) {
+        // วาง HTML แต่แปลงเป็น plain text
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = pastedText;
+        contentToInsert = tempDiv.textContent || tempDiv.innerText || "";
+      }
+
+      // 2. ลองตรวจสอบว่าเป็น JSON ไหม
+      else if (
+        pastedText.trim().startsWith("{") &&
+        pastedText.trim().endsWith("}")
+      ) {
+        try {
+          const jsonData = JSON.parse(pastedText);
+          // แปลง JSON เป็น readable text
+          contentToInsert = JSON.stringify(jsonData, null, 2);
+        } catch {
+          // ถ้า parse ไม่ได้ ใช้เป็น plain text
+          contentToInsert = pastedText;
+        }
+      }
+
+      // 3. plain text ธรรมดา
+      else {
+        contentToInsert = pastedText;
+      }
+
+      // Insert เข้า editor ที่ cursor position
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+
+      // ลบ content ที่ select อยู่ (ถ้ามี)
+      range.deleteContents();
+
+      // สร้าง text node ใหม่
+      const textNode = document.createTextNode(contentToInsert);
+      range.insertNode(textNode);
+
+      // ย้าย cursor ไปหลัง text ที่ paste
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Trigger content change event
+      handleInput();
+    },
+    [handleInput]
+  );
+
   return (
     <div className="structured-editor">
       {/* Toolbar */}
@@ -577,6 +645,7 @@ const StructuredEditor: React.FC<StructuredEditorProps> = ({
         }}
         suppressContentEditableWarning={true}
         data-placeholder="Start writing your chapter here..."
+        onPaste={handlePaste}
       />
     </div>
   );

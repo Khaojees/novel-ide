@@ -91,7 +91,7 @@ export const CharacterItem: React.FC<CharacterItemProps> = ({
 
         <div className="character-actions">
           <button
-            className={`pin-btn ${isPinned ? "pinned" : ""}`}
+            className={`character-pin-btn ${isPinned ? "pinned" : ""}`}
             onClick={onTogglePin}
             title={isPinned ? "Unpin character" : "Pin character"}
           >

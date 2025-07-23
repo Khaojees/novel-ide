@@ -580,7 +580,7 @@ export const cleanupNodes = (nodes: ContentNode[]): ContentNode[] => {
 
 // Helper functions สำหรับแปลง HTML <-> ContentNode[]
 export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
-  // console.log("🔍 HTML Input:", JSON.stringify(htmlContent));
+  console.log("🔍 HTML Input:", JSON.stringify(htmlContent));
 
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = htmlContent;
@@ -643,43 +643,29 @@ export function convertHtmlToContentNodes(htmlContent: string): ContentNode[] {
 
       if (element.tagName === "CHAR-REF") {
         const characterId = element.getAttribute("id") || "";
-        const context = element.getAttribute("data-context") || "fullname"; // 👈 อ่าน attribute
+        const context = element.getAttribute("data-context") || "fullname"; // เพิ่มบรรทัดนี้
         const content = element.textContent || "";
         const charNode = {
           id: `char-${Date.now()}-${index}-${Math.random()}`,
           type: "character" as const,
           characterId,
           content,
-          context: context as any, // 👈 ใช้จาก attribute
+          context: context as any, // เปลี่ยนจาก "nickname" hardcode
           createdAt: new Date().toISOString(),
         };
-        console.log("➕ Adding character node:", charNode);
         nodes.push(charNode);
       } else if (element.tagName === "LOC-REF") {
         const locationId = element.getAttribute("id") || "";
-        const nameType = element.getAttribute("data-type") || "fullname"; // 👈 อ่าน attribute
+        const nameType = element.getAttribute("data-type") || "fullname";
         const content = element.textContent || "";
         const locNode = {
           id: `loc-${Date.now()}-${index}-${Math.random()}`,
           type: "location" as const,
           locationId,
           content,
-          nameType: nameType as any, // 👈 เพิ่ม nameType
+          nameType: nameType as any,
           createdAt: new Date().toISOString(),
         };
-        console.log("➕ Adding location node:", locNode);
-        nodes.push(locNode);
-      } else if (element.tagName === "LOC-REF") {
-        const locationId = element.getAttribute("id") || "";
-        const content = element.textContent || "";
-        const locNode = {
-          id: `loc-${Date.now()}-${index}-${Math.random()}`,
-          type: "location" as const,
-          locationId,
-          content,
-          createdAt: new Date().toISOString(),
-        };
-        console.log("➕ Adding location node:", locNode);
         nodes.push(locNode);
       } else if (element.tagName === "BR") {
         const brNode = {
@@ -782,13 +768,11 @@ export function convertContentNodesToHtml(nodes: ContentNode[]): string {
           result = node.content;
           break;
         case "character":
-          // เก็บ context และ characterId ใน attributes
           const charNode = node as any;
           const context = charNode.context || "fullname";
           result = `<char-ref id="${charNode.characterId}" data-context="${context}">${node.content}</char-ref>`;
           break;
         case "location":
-          // เก็บ nameType และ locationId ใน attributes
           const locNode = node as any;
           const nameType = locNode.nameType || "fullname";
           result = `<loc-ref id="${locNode.locationId}" data-type="${nameType}">${node.content}</loc-ref>`;

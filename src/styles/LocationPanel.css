@@ -242,7 +242,7 @@
   gap: 4px;
 }
 
-.pin-btn {
+.location-pin-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,13 +256,13 @@
   transition: all 0.2s ease;
 }
 
-.pin-btn:hover {
+.location-pin-btn:hover {
   background: var(--bg-tertiary);
   border-color: var(--location-color);
   color: var(--location-color);
 }
 
-.pin-btn.pinned {
+.location-pin-btn.pinned {
   background: var(--location-color);
   border-color: var(--location-color);
   color: white;

@@ -205,7 +205,7 @@
   gap: 4px;
 }
 
-.pin-btn {
+.character-pin-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,13 +219,13 @@
   transition: all 0.2s ease;
 }
 
-.pin-btn:hover {
+.character-pin-btn:hover {
   background: var(--bg-tertiary);
   border-color: var(--character-color);
   color: var(--character-color);
 }
 
-.pin-btn.pinned {
+.character-pin-btn.pinned {
   background: var(--character-color);
   border-color: var(--character-color);
   color: white;
